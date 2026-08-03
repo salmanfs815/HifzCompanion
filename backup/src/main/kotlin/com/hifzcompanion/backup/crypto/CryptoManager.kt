@@ -3,6 +3,7 @@ package com.hifzcompanion.backup.crypto
 import android.content.Context
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -11,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CryptoManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val aead: Aead
 
@@ -23,7 +24,7 @@ class CryptoManager @Inject constructor(
             .withMasterKeyUri("android-keystore://tink_master_key")
             .build()
             .keysetHandle
-        aead = keysetHandle.getPrimitive(Aead::class.java)
+        aead = keysetHandle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
     }
 
     fun encrypt(data: ByteArray): ByteArray {

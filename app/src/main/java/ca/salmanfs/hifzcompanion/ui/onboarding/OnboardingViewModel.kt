@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.content.Context
-import androidx.credentials.GetCredentialResponse
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 
 data class OnboardingUiState(
     val currentStep: Int = 1,
@@ -26,7 +24,9 @@ data class OnboardingUiState(
     val memorizedPages: List<Int> = emptyList(),
     val dailyTargetPages: Int = 1,
     val isAutoTarget: Boolean = true,
-    val isOnboardingComplete: Boolean = false
+    val isOnboardingComplete: Boolean = false,
+    val isBusy: Boolean = false,
+    val message: String? = null
 )
 
 @HiltViewModel
@@ -39,35 +39,35 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    fun signIn(context: Context) {
+    fun signIn(context: Context, serverClientId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, message = null) }
             try {
-                // In a real app, use a real server client ID
-                val response = authManager.signIn(context, "YOUR_SERVER_CLIENT_ID")
-                val credential = GoogleIdTokenCredential.createFrom(response.credential.data)
-                // Now authorize for Drive
-                authManager.requestDriveAuthorization(context)
-                
-                // Assuming authorization succeeded, we can now check for backups
-                // (Omitted for brevity in this step)
+                authManager.authorize(context, serverClientId)
                 nextStep()
             } catch (e: Exception) {
-                // Handle error
+                _uiState.update { it.copy(message = e.message ?: "Google sign-in failed") }
+            } finally {
+                _uiState.update { it.copy(isBusy = false) }
             }
         }
     }
 
-    fun restoreFromCloud(context: Context) {
+    fun restoreFromCloud(context: Context, serverClientId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, message = null) }
             try {
-                // Assume we already authorized or re-authorize here
-                // Get token (omitted) and restore
-                val result = backupManager.performRestore("dummy_token")
+                val session = authManager.authorize(context, serverClientId)
+                val result = backupManager.performRestore(session.accessToken)
                 if (result.isSuccess) {
                     _uiState.update { it.copy(isOnboardingComplete = true) }
+                } else {
+                    _uiState.update { it.copy(message = result.exceptionOrNull()?.message ?: "Restore failed") }
                 }
             } catch (e: Exception) {
-                // Handle error
+                _uiState.update { it.copy(message = e.message ?: "Restore failed") }
+            } finally {
+                _uiState.update { it.copy(isBusy = false) }
             }
         }
     }
@@ -95,12 +95,12 @@ class OnboardingViewModel @Inject constructor(
             } else {
                 state.memorizedPages + pageId
             }
-            state.copy(memorizedPages = newList)
+            state.withPages(newList)
         }
     }
     
     fun setMemorizedPages(pages: List<Int>) {
-        _uiState.update { it.copy(memorizedPages = pages) }
+        _uiState.update { it.withPages(pages.filter { page -> page in 1..604 }.distinct().sorted()) }
     }
 
     fun setDailyTarget(pages: Int) {
@@ -108,7 +108,12 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun setAutoTarget(enabled: Boolean) {
-        _uiState.update { it.copy(isAutoTarget = enabled) }
+        _uiState.update {
+            it.copy(
+                isAutoTarget = enabled,
+                dailyTargetPages = if (enabled) autoTarget(it.memorizedPages.size) else it.dailyTargetPages
+            )
+        }
     }
 
     fun completeOnboarding() {
@@ -126,4 +131,11 @@ class OnboardingViewModel @Inject constructor(
             _uiState.update { it.copy(isOnboardingComplete = true) }
         }
     }
+
+    private fun OnboardingUiState.withPages(pages: List<Int>) = copy(
+        memorizedPages = pages,
+        dailyTargetPages = if (isAutoTarget) autoTarget(pages.size) else dailyTargetPages
+    )
+
+    private fun autoTarget(memorizedCount: Int) = maxOf(10, memorizedCount / 14).coerceAtMost(60)
 }

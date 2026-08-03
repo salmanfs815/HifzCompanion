@@ -11,4 +11,12 @@ sealed interface Route : NavKey {
     data object Dashboard : Route
     @Serializable
     data object ReviewSession : Route
+    @Serializable
+    data object Settings : Route
+    @Serializable
+    data object Statistics : Route
+    @Serializable
+    data class PageDetail(val pageId: Int) : Route
+    @Serializable
+    data class QueueList(val filter: String) : Route
 }

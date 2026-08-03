@@ -34,19 +34,13 @@ class BackupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun restoreSnapshot(snapshot: BackupSnapshot) {
-        // Clear existing data
-        hifzDao.deleteAllUserPages()
-        hifzDao.deleteAllReviewEvents()
-        hifzDao.deleteAllSchedulerState()
-        hifzDao.deleteAllUserSettings()
-
-        // Restore data
-        hifzDao.insertUserPages(snapshot.userPages.map { Json.decodeFromString(it) })
-        hifzDao.insertReviewEvents(snapshot.reviewEvents.map { Json.decodeFromString(it) })
-        hifzDao.insertSchedulerStates(snapshot.schedulerStates.map { Json.decodeFromString(it) })
-        hifzDao.insertUserSettings(snapshot.userSettingsEntities.map { Json.decodeFromString(it) })
-
-        // Restore DataStore settings
+        require(snapshot.version in 1..2) { "Unsupported backup version ${snapshot.version}" }
+        hifzDao.replaceBackupData(
+            pages = snapshot.userPages.map { Json.decodeFromString(it) },
+            events = snapshot.reviewEvents.map { Json.decodeFromString(it) },
+            states = snapshot.schedulerStates.map { Json.decodeFromString(it) },
+            settings = snapshot.userSettingsEntities.map { Json.decodeFromString(it) }
+        )
         userSettingsRepository.updateUserSettings(snapshot.userSettingsDataStore)
     }
 }

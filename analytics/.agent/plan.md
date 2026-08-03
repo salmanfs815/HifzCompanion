@@ -1,5 +1,7 @@
 # Project Plan
 
+> **Verification correction (2026-08-02):** This historical Gemini plan overstates completion. The analytics and notifications modules contain no Kotlin implementation, Google authentication/restore still contains placeholder credentials/tokens, Settings is not connected to app navigation, and several required statistics are placeholders. The authoritative current backlog is maintained in the root `.agent/plan.md` under "Codex Verified Status".
+
 
 
 ## Project Brief
@@ -65,4 +67,3 @@ Verification task set to PENDING until these are addressed.
   - app does not crash
   - verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues
 - **StartTime:** 2026-08-01 18:58:51 PDT
-

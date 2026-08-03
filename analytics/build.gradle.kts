@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-ui"))
     implementation(libs.hilt.android)
+    testImplementation(libs.junit)
 }
 
 

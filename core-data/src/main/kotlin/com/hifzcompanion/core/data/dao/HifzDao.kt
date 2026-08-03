@@ -32,6 +32,12 @@ interface HifzDao {
     @Query("SELECT * FROM review_events WHERE pageId = :pageId")
     fun getReviewEventsForPage(pageId: Int): Flow<List<ReviewEventEntity>>
 
+    @Query("SELECT * FROM review_events ORDER BY timestamp DESC, id DESC")
+    fun getAllReviewEvents(): Flow<List<ReviewEventEntity>>
+
+    @Query("SELECT * FROM user_pages WHERE pageId = :pageId LIMIT 1")
+    fun getUserPage(pageId: Int): Flow<UserPageEntity?>
+
     @Query("SELECT * FROM quran_pages")
     suspend fun getAllQuranPagesSnapshot(): List<QuranPageEntity>
 
@@ -70,6 +76,23 @@ interface HifzDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserSettings(settings: List<UserSettingsEntity>)
+
+    @androidx.room.Transaction
+    suspend fun replaceBackupData(
+        pages: List<UserPageEntity>,
+        events: List<ReviewEventEntity>,
+        states: List<SchedulerStateEntity>,
+        settings: List<UserSettingsEntity>
+    ) {
+        deleteAllUserPages()
+        deleteAllReviewEvents()
+        deleteAllSchedulerState()
+        deleteAllUserSettings()
+        insertUserPages(pages)
+        insertReviewEvents(events)
+        insertSchedulerStates(states)
+        insertUserSettings(settings)
+    }
 
     @Query("SELECT COUNT(DISTINCT pageId) FROM review_events WHERE timestamp >= :since")
     fun getReviewCountSince(since: Long): Flow<Int>

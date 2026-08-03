@@ -11,5 +11,8 @@ data class ReviewEventEntity(
     val pageId: Int,
     val timestamp: Long,
     val result: String,
-    val difficulty: Int
+    val difficulty: Int,
+    val reviewType: String = "SCHEDULED",
+    val durationSeconds: Int = 0,
+    val notes: String? = null
 )

@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import com.hifzcompanion.core.domain.models.UserSettings
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -14,6 +15,9 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     userSettingsRepository: UserSettingsRepository
 ) : ViewModel() {
+    val userSettings: StateFlow<UserSettings?> = userSettingsRepository.getUserSettings()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     val isOnboardingCompleted: StateFlow<Boolean?> = userSettingsRepository.getUserSettings()
         .map { it.onboardingCompleted }
         .stateIn(

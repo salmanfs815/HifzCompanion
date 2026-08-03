@@ -79,3 +79,60 @@ Hifz Companion is a local-first, offline-first personal revision scheduler desig
   - Build pass
   - Critic_agent verifies stability and requirement alignment
 
+## Codex Verified Status - 2026-08-02
+
+The statuses above and in `analytics/.agent/plan.md` were compared with the 24-page Software Design Specification, source code, tests, and a debug build. The app has a working architectural foundation and an end-to-end onboarding -> dashboard -> review path, but it is not feature-complete. Prior claims that Google Drive backup, settings, analytics, and notifications are complete are not supported by the current implementation.
+
+### Task_5_Logo_Adaptive_UI_And_Build_Repair
+- **Status:** COMPLETED
+- **Updates:**
+  - Replaced the placeholder book icon with the supplied `ic_launcher_logo.png` asset.
+  - Constrained onboarding and review content to a centered 720dp maximum width for tablets and foldables.
+  - Prevented division by zero in the empty dashboard progress state.
+  - Aligned the backup and settings modules to compileSdk 37, fixing a real AAR metadata build failure.
+  - Verified `testDebugUnitTest` and `assembleDebug`: 8 tests passed, 0 failures; debug APK produced.
+
+### Task_6_Production_Ready_Authentication_And_Backup
+- **Status:** IMPLEMENTED_NEEDS_OAUTH_CONFIGURATION
+- **Updates:** Removed hard-coded client IDs and dummy tokens; added build-time OAuth configuration, actionable auth states, encrypted token storage, atomic restore, Settings integration, and daily WorkManager backup. A real Google Cloud OAuth client is still required for live Drive verification.
+- **Acceptance Criteria:**
+  - Replace `YOUR_SERVER_CLIENT_ID` and `dummy_token` placeholders with configured Credential Manager and Drive authorization flows.
+  - Surface sign-in/restore errors in onboarding UI.
+  - Make Settings navigable and route manual backup/restore through a ViewModel.
+  - Prove encrypted AppData backup and restore on a device or emulator.
+
+### Task_7_Specification_Complete_Product_Surfaces
+- **Status:** COMPLETED
+- **Updates:** Added typed Settings, Statistics, Page Detail, and queue-list destinations; complete dashboard statistics and health labels; page history; morning/evening/weekly notification workers; and a non-empty analytics implementation.
+- **Acceptance Criteria:**
+  - Add Page Detail with review history.
+  - Implement complete dashboard statistics: average quality, longest streak, missed reviews, backlog, average reviews/day, and the specified health-score inputs.
+  - Implement morning, night, and weekly notifications.
+  - Replace empty analytics and notifications modules with real implementations.
+
+### Task_8_Scheduler_And_Settings_Compliance
+- **Status:** COMPLETED
+- **Updates:** Added persisted schedules/capacity/rotation/overload/review-order/recovery/theme/notification settings; explicit scheduler stages; configurable load balancing and recovery behavior; Room v1-to-v2 migration; and expanded scheduler tests.
+- **Acceptance Criteria:**
+  - Persist and honor configurable daily capacity, minimum pages, rotation days, overload percentage, schedules, review order, auto-advance, and theme.
+  - Compute long-term load from `max(half juz, memorizedPages / rotationDays)` and use configured overload rather than fixed constructor values.
+  - Implement explicit scheduler states and configurable recovery exit behavior from the specification.
+  - Add tests for backlog spreading, prioritization under capacity, configurable schedules, state transitions, and date boundaries.
+
+### Task_9_Onboarding_Accessibility_And_Device_Verification
+- **Status:** IMPLEMENTED_NEEDS_DEVICE_MATRIX
+- **Updates:** Added page-range, completed-surah, and individual-page setup using Madinah page boundaries; automatic target calculation; Compose test coverage; dark theme; and adaptive layouts. No emulator/device was connected, so phone/tablet/foldable runtime execution remains an external verification step.
+- **Acceptance Criteria:**
+  - Replace the 604-chip-only progress input with fast range/surah entry matching the specification examples.
+  - Validate daily target ranges against real scheduler capacity.
+  - Add Compose UI tests and run the complete flow on phone, tablet, and foldable profiles.
+  - Verify app launch and crash-free behavior on an emulator/device; a successful APK build alone does not prove runtime stability.
+
+## Feature Completion Verification - 2026-08-02
+
+- `testDebugUnitTest`: 17 tests passed, 0 failures (13 scheduler, 2 onboarding mapping, 1 analytics, 1 app baseline).
+- `compileDebugAndroidTestKotlin`: passed; Compose instrumentation tests compile.
+- `lintDebug`: passed across the final source state.
+- `assembleDebug`: passed; debug APK generated.
+- `assembleRelease`: passed with lint-vital; unsigned release APK generated.
+- No connected Android device was available, so instrumentation execution, live notification timing, and Google Drive backup/restore remain unverified at runtime.

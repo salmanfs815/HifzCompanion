@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.hifzcompanion.backup.BackupManager
+import com.hifzcompanion.backup.auth.BackupSessionStore
+import com.hifzcompanion.backup.auth.GoogleAuthManager
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -12,16 +14,18 @@ import java.util.concurrent.TimeUnit
 class BackupWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    private val sessionStore: BackupSessionStore,
+    private val authManager: GoogleAuthManager
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        // In a real app, we would retrieve the stored access token or refresh it.
-        // For this implementation, we assume the token is available in DataStore or similar.
-        // If not available, we fail.
-        
-        val accessToken = inputData.getString("access_token") ?: return Result.failure()
-        
+        val accessToken = runCatching {
+            authManager.requestDriveAuthorization(applicationContext)
+        }.getOrElse {
+            return if (runAttemptCount < 3) Result.retry() else Result.failure()
+        }
+        sessionStore.saveAccessToken(accessToken)
         val result = backupManager.performBackup(accessToken)
         
         return if (result.isSuccess) {
@@ -34,17 +38,14 @@ class BackupWorker @AssistedInject constructor(
     companion object {
         private const val WORK_NAME = "daily_backup_work"
 
-        fun schedule(context: Context, accessToken: String) {
+        fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresBatteryNotLow(true)
                 .build()
 
-            val data = workDataOf("access_token" to accessToken)
-
             val request = PeriodicWorkRequestBuilder<BackupWorker>(1, TimeUnit.DAYS)
                 .setConstraints(constraints)
-                .setInputData(data)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
                 .build()
 
@@ -53,6 +54,10 @@ class BackupWorker @AssistedInject constructor(
                 ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
+        }
+
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
         }
     }
 }

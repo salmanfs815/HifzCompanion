@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.hifzcompanion.core.data.dao.HifzDao
 import com.hifzcompanion.core.data.database.AppDatabase
+import com.hifzcompanion.core.data.database.MIGRATION_1_2
 import com.hifzcompanion.core.data.repository.BackupRepositoryImpl
 import com.hifzcompanion.core.data.repository.HifzRepositoryImpl
 import com.hifzcompanion.core.domain.repository.BackupRepository
@@ -36,7 +37,7 @@ abstract class DatabaseModule {
                 context,
                 AppDatabase::class.java,
                 "hifz_companion.db"
-            ).build()
+            ).addMigrations(MIGRATION_1_2).build()
         }
 
         @Provides

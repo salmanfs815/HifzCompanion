@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,20 +15,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hifzcompanion.core.domain.usecase.DashboardStats
+import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onNavigateToReview: () -> Unit
+    onNavigateToReview: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToStatistics: () -> Unit,
+    onNavigateToQueue: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val adaptiveInfo = currentWindowAdaptiveInfo()
-    val isExpanded = adaptiveInfo.windowSizeClass.windowWidthSizeClass == androidx.window.core.layout.WindowWidthSizeClass.EXPANDED
+    val isExpanded = LocalConfiguration.current.screenWidthDp >= 840
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(title = { Text("Dashboard") })
+            CenterAlignedTopAppBar(
+                title = { Text("Dashboard") },
+                actions = {
+                    IconButton(onClick = onNavigateToStatistics) { Icon(Icons.Default.BarChart, "Statistics") }
+                    IconButton(onClick = onNavigateToSettings) { Icon(Icons.Default.Settings, "Settings") }
+                }
+            )
         }
     ) { padding ->
         when (val state = uiState) {
@@ -43,6 +51,8 @@ fun DashboardScreen(
                     stats = state.stats,
                     isExpanded = isExpanded,
                     onNavigateToReview = onNavigateToReview,
+                    onNavigateToStatistics = onNavigateToStatistics,
+                    onNavigateToQueue = onNavigateToQueue,
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -60,6 +70,8 @@ fun DashboardContent(
     stats: DashboardStats,
     isExpanded: Boolean,
     onNavigateToReview: () -> Unit,
+    onNavigateToStatistics: () -> Unit,
+    onNavigateToQueue: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -78,22 +90,22 @@ fun DashboardContent(
             modifier = Modifier.weight(1f)
         ) {
             item {
-                StatCard("Today's Review", stats.todayReviewCount.toString(), Icons.Default.Refresh)
+                StatCard("Today's Review", stats.todayReviewCount.toString(), Icons.Default.Refresh) { onNavigateToQueue("DUE") }
             }
             item {
-                StatCard("New Memorization", stats.newMemorizationCount.toString(), Icons.Default.Add)
+                StatCard("New Memorization", stats.newMemorizationCount.toString(), Icons.Default.Add) { onNavigateToQueue("NEW") }
             }
             item {
-                StatCard("Recovery", stats.recoveryCount.toString(), Icons.Default.Warning)
+                StatCard("Recovery", stats.recoveryCount.toString(), Icons.Default.Warning) { onNavigateToQueue("RECOVERY") }
             }
             item {
-                StatCard("Overdue", stats.overdueCount.toString(), Icons.Default.History)
+                StatCard("Overdue", stats.overdueCount.toString(), Icons.Default.History) { onNavigateToQueue("OVERDUE") }
             }
             item {
-                StatCard("Streak", "${stats.currentStreak} Days", Icons.Default.Whatshot)
+                StatCard("Streak", "${stats.currentStreak} Days", Icons.Default.Whatshot, onNavigateToStatistics)
             }
             item {
-                StatCard("Health Score", "${stats.healthScore}%", Icons.Default.Favorite)
+                StatCard("Health Score", "${stats.healthScore}%", Icons.Default.Favorite, onNavigateToStatistics)
             }
         }
 
@@ -125,8 +137,8 @@ fun TodayProgressCard(current: Int, total: Int) {
 }
 
 @Composable
-fun StatCard(label: String, value: String, icon: ImageVector) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+fun StatCard(label: String, value: String, icon: ImageVector, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally

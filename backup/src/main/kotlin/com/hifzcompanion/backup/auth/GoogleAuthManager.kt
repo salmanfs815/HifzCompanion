@@ -15,9 +15,14 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class GoogleSession(
+    val accountId: String,
+    val accessToken: String
+)
+
 @Singleton
 class GoogleAuthManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val credentialManager = CredentialManager.create(context)
 
@@ -34,14 +39,28 @@ class GoogleAuthManager @Inject constructor(
         credentialManager.getCredential(activityContext, request)
     }
 
-    suspend fun requestDriveAuthorization(activityContext: Context) = withContext(Dispatchers.IO) {
+    suspend fun requestDriveAuthorization(activityContext: Context): String = withContext(Dispatchers.IO) {
         val requestedScopes = listOf(Scope("https://www.googleapis.com/auth/drive.appdata"))
         val authorizationRequest = AuthorizationRequest.builder()
             .setRequestedScopes(requestedScopes)
             .build()
 
-        Identity.getAuthorizationClient(activityContext)
+        val result = Identity.getAuthorizationClient(activityContext)
             .authorize(authorizationRequest)
             .await()
+        result.accessToken ?: error("Google Drive authorization requires user consent")
+    }
+
+    suspend fun authorize(activityContext: Context, serverClientId: String): GoogleSession {
+        require(serverClientId.isNotBlank()) {
+            "Google OAuth is not configured. Set HIFZ_GOOGLE_SERVER_CLIENT_ID in Gradle properties."
+        }
+        val response = signIn(activityContext, serverClientId)
+        val credential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+            .createFrom(response.credential.data)
+        return GoogleSession(
+            accountId = credential.id,
+            accessToken = requestDriveAuthorization(activityContext)
+        )
     }
 }

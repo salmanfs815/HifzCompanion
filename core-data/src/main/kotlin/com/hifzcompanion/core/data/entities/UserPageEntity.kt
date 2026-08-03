@@ -13,5 +13,10 @@ data class UserPageEntity(
     val currentStep: Int,
     val nextReviewDate: Long, // Epoch milli
     val lastReviewDate: Long?,
-    val lastResult: String?
+    val lastResult: String?,
+    val stage: String = "NEW",
+    val dateMemorized: Long? = null,
+    val consecutiveStrongReviews: Int = 0,
+    val active: Boolean = true,
+    val notes: String? = null
 )

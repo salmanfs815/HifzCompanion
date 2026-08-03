@@ -3,6 +3,7 @@ package com.hifzcompanion.scheduler
 import com.hifzcompanion.scheduler.models.Progress
 import com.hifzcompanion.scheduler.models.QueueType
 import com.hifzcompanion.scheduler.models.ReviewResult
+import com.hifzcompanion.scheduler.models.SchedulerStage
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -114,5 +115,78 @@ class HifzSchedulerTest {
         assertEquals(10, scheduler.calculateLongTermPagesPerDay(100)) // 100/14 < 10
         assertEquals(14, scheduler.calculateLongTermPagesPerDay(200)) // 200/14 = 14.28 -> 14
         assertEquals(43, scheduler.calculateLongTermPagesPerDay(604)) // 604/14 = 43.14 -> 43
+    }
+
+    @Test
+    fun `custom schedules and rotation are honored`() {
+        val config = SchedulerConfig(
+            dailyCapacity = 12,
+            minimumPages = 5,
+            rotationDays = 21,
+            newSchedule = listOf(0, 4, 9),
+            weakSchedule = listOf(2, 5),
+            failedSchedule = listOf(0, 2, 6)
+        )
+        val progress = Progress(1, QueueType.NEW, 0, today, null, null)
+
+        val next = scheduler.scheduleNext(progress, ReviewResult.GOOD, today, config)
+
+        assertEquals(today.plusDays(4), next.nextReviewDate)
+        assertEquals(SchedulerStage.STABILIZING, next.stage)
+    }
+
+    @Test
+    fun `weak result enters recovery and reduces strength`() {
+        val progress = Progress(1, QueueType.LONG_TERM, 0, today, today.minusDays(14), ReviewResult.GOOD, strength = 70)
+
+        val next = scheduler.scheduleNext(progress, ReviewResult.WEAK, today)
+
+        assertEquals(QueueType.RECOVERY_WEAK, next.queueType)
+        assertEquals(SchedulerStage.WEAK, next.stage)
+        assertEquals(55, next.strength)
+    }
+
+    @Test
+    fun `recovery requires configured consecutive strong reviews`() {
+        val config = SchedulerConfig(recoveryStrongReviewsRequired = 2)
+        val progress = Progress(1, QueueType.RECOVERY_WEAK, 0, today, today.minusDays(1), ReviewResult.WEAK)
+
+        val first = scheduler.scheduleNext(progress, ReviewResult.STRONG, today, config)
+        val second = scheduler.scheduleNext(first, ReviewResult.STRONG, today.plusDays(3), config)
+
+        assertEquals(QueueType.RECOVERY_WEAK, first.queueType)
+        assertEquals(QueueType.LONG_TERM, second.queueType)
+        assertEquals(SchedulerStage.ROTATING, second.stage)
+    }
+
+    @Test
+    fun `configured overload caps backlog`() {
+        val config = SchedulerConfig(dailyCapacity = 20, maximumOverloadPercent = 125)
+        val overdue = (1..50).map { Progress(it, QueueType.LONG_TERM, 0, today.minusDays(2), today.minusDays(20), ReviewResult.GOOD, dateMemorized = today.minusDays(it.toLong())) }
+
+        val tasks = scheduler.getDailyTasks(overdue, today, overdue.size, config)
+
+        assertEquals(25, tasks.size)
+    }
+
+    @Test
+    fun `inactive and future pages are excluded`() {
+        val inactive = Progress(1, QueueType.NEW, 0, today, null, null, active = false)
+        val future = Progress(2, QueueType.NEW, 0, today.plusDays(1), null, null)
+
+        assertEquals(emptyList<Progress>(), scheduler.getDailyTasks(listOf(inactive, future), today, 0))
+    }
+
+    @Test
+    fun `review order is configurable`() {
+        val old = Progress(1, QueueType.LONG_TERM, 0, today, today.minusDays(10), ReviewResult.GOOD, dateMemorized = today.minusDays(100))
+        val new = Progress(2, QueueType.LONG_TERM, 0, today, today.minusDays(10), ReviewResult.GOOD, dateMemorized = today.minusDays(5))
+
+        val tasks = scheduler.getDailyTasks(
+            listOf(new, old), today, 2,
+            SchedulerConfig(reviewOrder = SchedulerReviewOrder.OLDEST_FIRST)
+        )
+
+        assertEquals(listOf(1, 2), tasks.map { it.unitId })
     }
 }

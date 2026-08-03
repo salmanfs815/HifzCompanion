@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BackupSnapshot(
-    val version: Int = 1,
+    val version: Int = 2,
     val timestamp: Long,
     val quranPages: List<String>, // JSON serialized entities to avoid circular dependency
     val userPages: List<String>,

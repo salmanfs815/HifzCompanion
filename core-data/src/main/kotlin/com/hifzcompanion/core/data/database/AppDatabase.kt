@@ -17,7 +17,7 @@ import com.hifzcompanion.core.data.entities.UserSettingsEntity
         SchedulerStateEntity::class,
         UserSettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

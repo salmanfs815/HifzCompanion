@@ -5,6 +5,7 @@ import com.hifzcompanion.core.domain.repository.HifzRepository
 import com.hifzcompanion.core.domain.repository.UserSettingsRepository
 import com.hifzcompanion.scheduler.models.Progress
 import com.hifzcompanion.scheduler.models.QueueType
+import com.hifzcompanion.scheduler.models.SchedulerStage
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -23,10 +24,12 @@ class InitializeUserProgressUseCase @Inject constructor(
                 Progress(
                     unitId = pageId,
                     queueType = QueueType.LONG_TERM,
+                    stage = SchedulerStage.ROTATING,
                     currentStep = 0,
                     nextReviewDate = today, // Start reviewing from today/tomorrow
                     lastReviewDate = today,
-                    lastResult = null
+                    lastResult = null,
+                    dateMemorized = today
                 )
             )
         }
@@ -49,10 +52,12 @@ class InitializeUserProgressUseCase @Inject constructor(
                 Progress(
                     unitId = nextPage,
                     queueType = QueueType.NEW,
+                    stage = SchedulerStage.NEW,
                     currentStep = 0,
                     nextReviewDate = today,
                     lastReviewDate = null,
-                    lastResult = null
+                    lastResult = null,
+                    dateMemorized = null
                 )
             )
         }
