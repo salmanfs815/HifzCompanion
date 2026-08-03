@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.HifzCompanion" parent="Theme.MaterialComponents.Light" />
+</resources>
