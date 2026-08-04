@@ -36,6 +36,13 @@ class HifzRepositoryImpl @Inject constructor(
     override fun getReviewEvents(unitId: Int): Flow<List<ReviewRecord>> =
         hifzDao.getReviewEventsForPage(unitId).map { events -> events.map { it.toDomain() } }
 
+    override suspend fun getReviewEventsSnapshot(unitId: Int): List<ReviewRecord> =
+        hifzDao.getReviewEventsForPageSnapshot(unitId).map { it.toDomain() }
+
+    override suspend fun updateReviewEventQuality(eventId: Int, result: ReviewResult) {
+        hifzDao.updateReviewEventQuality(eventId, result.name, result.difficulty())
+    }
+
     override suspend fun updateProgress(progress: Progress) {
         hifzDao.insertUserPage(progress.toEntity())
     }
@@ -48,18 +55,17 @@ class HifzRepositoryImpl @Inject constructor(
         durationSeconds: Int,
         notes: String?
     ) {
-        val timestamp = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val timestamp = if (date == LocalDate.now()) {
+            System.currentTimeMillis()
+        } else {
+            date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
         hifzDao.insertReviewEvent(
             ReviewEventEntity(
                 pageId = unitId,
                 timestamp = timestamp,
                 result = result.name,
-                difficulty = when (result) {
-                    ReviewResult.STRONG -> 0
-                    ReviewResult.GOOD -> 1
-                    ReviewResult.WEAK -> 2
-                    ReviewResult.FAILED -> 3
-                },
+                difficulty = result.difficulty(),
                 reviewType = reviewType.name,
                 durationSeconds = durationSeconds,
                 notes = notes
@@ -115,4 +121,11 @@ class HifzRepositoryImpl @Inject constructor(
         durationSeconds = durationSeconds,
         notes = notes
     )
+
+    private fun ReviewResult.difficulty() = when (this) {
+        ReviewResult.STRONG -> 0
+        ReviewResult.GOOD -> 1
+        ReviewResult.WEAK -> 2
+        ReviewResult.FAILED -> 3
+    }
 }

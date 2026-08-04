@@ -32,6 +32,12 @@ interface HifzDao {
     @Query("SELECT * FROM review_events WHERE pageId = :pageId")
     fun getReviewEventsForPage(pageId: Int): Flow<List<ReviewEventEntity>>
 
+    @Query("SELECT * FROM review_events WHERE pageId = :pageId ORDER BY timestamp, id")
+    suspend fun getReviewEventsForPageSnapshot(pageId: Int): List<ReviewEventEntity>
+
+    @Query("UPDATE review_events SET result = :result, difficulty = :difficulty WHERE id = :eventId")
+    suspend fun updateReviewEventQuality(eventId: Int, result: String, difficulty: Int)
+
     @Query("SELECT * FROM review_events ORDER BY timestamp DESC, id DESC")
     fun getAllReviewEvents(): Flow<List<ReviewEventEntity>>
 

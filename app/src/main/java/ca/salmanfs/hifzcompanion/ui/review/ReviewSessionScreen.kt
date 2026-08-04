@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hifzcompanion.scheduler.models.ReviewResult
+import com.hifzcompanion.core.domain.quran.QuranMetadata
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +74,7 @@ fun ReviewContent(
     total: Int,
     onRate: (ReviewResult) -> Unit
 ) {
+    val reference = remember(pageId) { QuranMetadata.referenceForPage(pageId) }
     Column(
         modifier = Modifier
             .widthIn(max = 720.dp)
@@ -93,6 +95,13 @@ fun ReviewContent(
                 fontSize = 120.sp
             ),
             color = MaterialTheme.colorScheme.primary
+        )
+        Text("Juz ${reference.juz}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = reference.ayahLabel.orEmpty(),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Spacer(modifier = Modifier.height(16.dp))

@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.hifzcompanion.core.domain.models.ReviewRecord
 import com.hifzcompanion.core.domain.repository.HifzRepository
+import com.hifzcompanion.core.domain.quran.QuranMetadata
 import com.hifzcompanion.scheduler.models.Progress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -35,6 +36,7 @@ class PageDetailViewModel @Inject constructor(private val repository: HifzReposi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PageDetailScreen(viewModel: PageDetailViewModel, pageId: Int, onBack: () -> Unit) {
+    val reference = remember(pageId) { QuranMetadata.referenceForPage(pageId) }
     val stateFlow = remember(pageId) { viewModel.state(pageId) }
     val state = stateFlow.collectAsStateWithLifecycle().value
     Scaffold(topBar = {
@@ -51,6 +53,9 @@ fun PageDetailScreen(viewModel: PageDetailViewModel, pageId: Int, onBack: () -> 
                 val progress = state.progress
                 ElevatedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Juz ${reference.juz}", style = MaterialTheme.typography.titleMedium)
+                        Text(reference.ayahLabel.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+                        HorizontalDivider()
                         Text("Status", style = MaterialTheme.typography.titleMedium)
                         Text(progress?.stage?.name?.replace('_', ' ') ?: "Not tracked")
                         Text("Strength: ${progress?.strength ?: 0}%")

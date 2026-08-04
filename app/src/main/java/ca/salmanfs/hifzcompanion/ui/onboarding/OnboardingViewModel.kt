@@ -16,6 +16,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.content.Context
+import android.app.PendingIntent
+import android.content.Intent
+import com.hifzcompanion.backup.auth.DriveAuthorizationResult
+import com.hifzcompanion.backup.auth.GoogleSession
+import com.hifzcompanion.backup.auth.BackupSessionStore
 
 data class OnboardingUiState(
     val currentStep: Int = 1,
@@ -33,47 +38,62 @@ data class OnboardingUiState(
 class OnboardingViewModel @Inject constructor(
     private val initializeUserProgressUseCase: InitializeUserProgressUseCase,
     private val authManager: GoogleAuthManager,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    private val sessionStore: BackupSessionStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
+    private var pendingRestore = false
 
-    fun signIn(context: Context, serverClientId: String) {
+    fun connectGoogleDrive(context: Context, restore: Boolean, launchConsent: (PendingIntent) -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, message = null) }
             try {
-                authManager.authorize(context, serverClientId)
-                nextStep()
+                when (val authorization = authManager.beginDriveAuthorization(context)) {
+                    is DriveAuthorizationResult.Granted -> finishGoogleDriveConnection(authorization.session, restore)
+                    is DriveAuthorizationResult.RequiresConsent -> {
+                        pendingRestore = restore
+                        launchConsent(authorization.pendingIntent)
+                    }
+                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(message = e.message ?: "Google sign-in failed") }
-            } finally {
-                _uiState.update { it.copy(isBusy = false) }
+                _uiState.update { it.copy(isBusy = false, message = e.message ?: "Google Drive connection failed") }
             }
         }
     }
 
-    fun restoreFromCloud(context: Context, serverClientId: String) {
+    fun completeDriveAuthorization(data: Intent?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true, message = null) }
-            try {
-                val session = authManager.authorize(context, serverClientId)
-                val result = backupManager.performRestore(session.accessToken)
-                if (result.isSuccess) {
-                    _uiState.update { it.copy(isOnboardingComplete = true) }
-                } else {
-                    _uiState.update { it.copy(message = result.exceptionOrNull()?.message ?: "Restore failed") }
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(message = e.message ?: "Restore failed") }
-            } finally {
-                _uiState.update { it.copy(isBusy = false) }
+            if (data == null) {
+                _uiState.update { it.copy(isBusy = false, message = "Google Drive connection was canceled.") }
+                return@launch
             }
+            try {
+                finishGoogleDriveConnection(authManager.completeDriveAuthorization(data), pendingRestore)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isBusy = false, message = e.message ?: "Google Drive connection failed") }
+            }
+        }
+    }
+
+    private suspend fun finishGoogleDriveConnection(session: GoogleSession, restore: Boolean) {
+        sessionStore.saveAccessToken(session.accessToken)
+        if (!restore) {
+            _uiState.update { it.copy(isBusy = false) }
+            nextStep()
+            return
+        }
+        val result = backupManager.performRestore(session.accessToken)
+        if (result.isSuccess) {
+            _uiState.update { it.copy(isBusy = false, isOnboardingComplete = true) }
+        } else {
+            _uiState.update { it.copy(isBusy = false, message = result.exceptionOrNull()?.message ?: "Restore failed") }
         }
     }
 
     fun nextStep() {
-        _uiState.update { it.copy(currentStep = it.currentStep + 1) }
+        _uiState.update { it.copy(currentStep = (it.currentStep + 1).coerceAtMost(4)) }
     }
 
     fun previousStep() {
@@ -101,19 +121,6 @@ class OnboardingViewModel @Inject constructor(
     
     fun setMemorizedPages(pages: List<Int>) {
         _uiState.update { it.withPages(pages.filter { page -> page in 1..604 }.distinct().sorted()) }
-    }
-
-    fun setDailyTarget(pages: Int) {
-        _uiState.update { it.copy(dailyTargetPages = pages, isAutoTarget = false) }
-    }
-
-    fun setAutoTarget(enabled: Boolean) {
-        _uiState.update {
-            it.copy(
-                isAutoTarget = enabled,
-                dailyTargetPages = if (enabled) autoTarget(it.memorizedPages.size) else it.dailyTargetPages
-            )
-        }
     }
 
     fun completeOnboarding() {

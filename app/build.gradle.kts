@@ -19,11 +19,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField(
-            "String",
-            "GOOGLE_SERVER_CLIENT_ID",
-            "\"${providers.gradleProperty("HIFZ_GOOGLE_SERVER_CLIENT_ID").orElse("").get()}\""
-        )
     }
 
     buildTypes {
@@ -39,7 +34,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 
     packaging {
@@ -64,9 +58,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
     implementation(libs.play.services.auth)
     implementation(libs.hilt.nav.compose)
     implementation(libs.hilt.android)

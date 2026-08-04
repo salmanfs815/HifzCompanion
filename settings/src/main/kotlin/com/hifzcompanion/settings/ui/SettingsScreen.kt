@@ -1,6 +1,8 @@
 package com.hifzcompanion.settings.ui
 
 import android.content.Context
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,7 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +23,8 @@ import androidx.lifecycle.viewModelScope
 import com.hifzcompanion.backup.BackupManager
 import com.hifzcompanion.backup.auth.BackupSessionStore
 import com.hifzcompanion.backup.auth.GoogleAuthManager
+import com.hifzcompanion.backup.auth.DriveAuthorizationResult
+import com.hifzcompanion.backup.auth.GoogleSession
 import com.hifzcompanion.backup.worker.BackupWorker
 import com.hifzcompanion.core.domain.models.AppTheme
 import com.hifzcompanion.core.domain.models.UserSettings
@@ -30,6 +34,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.time.LocalTime
+import java.time.DayOfWeek
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class SettingsUiState(
     val settings: UserSettings = UserSettings(),
@@ -53,25 +61,50 @@ class SettingsViewModel @Inject constructor(
         repository.updateUserSettings(transform(state.value.settings))
     }
 
-    fun backup(context: Context, clientId: String) = runBackupAction(context, clientId, restore = false)
-    fun restore(context: Context, clientId: String) = runBackupAction(context, clientId, restore = true)
+    private var pendingRestore = false
 
-    private fun runBackupAction(context: Context, clientId: String, restore: Boolean) = viewModelScope.launch {
+    fun backup(context: Context, launchConsent: (PendingIntent) -> Unit) = beginBackupAction(context, restore = false, launchConsent)
+    fun restore(context: Context, launchConsent: (PendingIntent) -> Unit) = beginBackupAction(context, restore = true, launchConsent)
+
+    private fun beginBackupAction(context: Context, restore: Boolean, launchConsent: (PendingIntent) -> Unit) = viewModelScope.launch {
         busy.value = true
         message.value = null
         try {
-            val session = authManager.authorize(context, clientId)
-            sessionStore.saveAccessToken(session.accessToken)
-            val result = if (restore) backupManager.performRestore(session.accessToken) else backupManager.performBackup(session.accessToken)
-            message.value = if (result.isSuccess) {
-                if (restore) "Restore complete" else "Backup complete"
-            } else result.exceptionOrNull()?.message ?: "Operation failed"
-            if (!restore && state.value.settings.automaticBackupEnabled) BackupWorker.schedule(context)
+            when (val authorization = authManager.beginDriveAuthorization(context)) {
+                is DriveAuthorizationResult.Granted -> performBackupAction(context, authorization.session, restore)
+                is DriveAuthorizationResult.RequiresConsent -> {
+                    pendingRestore = restore
+                    launchConsent(authorization.pendingIntent)
+                }
+            }
         } catch (error: Exception) {
             message.value = error.message ?: "Google Drive operation failed"
-        } finally {
             busy.value = false
         }
+    }
+
+    fun completeAuthorization(context: Context, data: Intent?) = viewModelScope.launch {
+        if (data == null) {
+            message.value = "Google Drive connection was canceled."
+            busy.value = false
+            return@launch
+        }
+        try {
+            performBackupAction(context, authManager.completeDriveAuthorization(data), pendingRestore)
+        } catch (error: Exception) {
+            message.value = error.message ?: "Google Drive authorization failed"
+            busy.value = false
+        }
+    }
+
+    private suspend fun performBackupAction(context: Context, session: GoogleSession, restore: Boolean) {
+        sessionStore.saveAccessToken(session.accessToken)
+        val result = if (restore) backupManager.performRestore(session.accessToken) else backupManager.performBackup(session.accessToken)
+        message.value = if (result.isSuccess) {
+            if (restore) "Restore complete" else "Backup complete"
+        } else result.exceptionOrNull()?.message ?: "Operation failed"
+        if (!restore && state.value.settings.automaticBackupEnabled) BackupWorker.schedule(context)
+        busy.value = false
     }
 
     fun setAutomaticBackup(context: Context, enabled: Boolean) {
@@ -84,7 +117,8 @@ class SettingsViewModel @Inject constructor(
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
-    serverClientId: String,
+    onEditMemorization: () -> Unit,
+    launchAuthorization: (PendingIntent) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
@@ -100,13 +134,21 @@ fun SettingsScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).widthIn(max = 720.dp).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text("Memorization", style = MaterialTheme.typography.titleLarge)
+            Text("Correct pages, Surahs, or Juz selected during onboarding.", style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick = onEditMemorization, modifier = Modifier.fillMaxWidth()) {
+                Text("Update current memorization")
+            }
+
+            HorizontalDivider()
             Text("Scheduler", style = MaterialTheme.typography.titleLarge)
-            SettingSlider("Daily capacity", settings.dailyCapacity, 10..60) { viewModel.update { s -> s.copy(dailyCapacity = it) } }
-            SettingSlider("Minimum pages", settings.minimumPages, 1..30) { viewModel.update { s -> s.copy(minimumPages = it) } }
-            SettingSlider("Rotation days", settings.rotationDays, 7..60) { viewModel.update { s -> s.copy(rotationDays = it) } }
-            SettingSlider("Maximum overload", settings.maximumOverloadPercent, 100..200, "%") { viewModel.update { s -> s.copy(maximumOverloadPercent = it) } }
-            SettingSlider("Strong reviews to exit recovery", settings.recoveryStrongReviewsRequired, 1..5) { viewModel.update { s -> s.copy(recoveryStrongReviewsRequired = it) } }
+            SettingSlider("Daily capacity", "Usual maximum number of review pages assigned per day.", settings.dailyCapacity, 10..60) { viewModel.update { s -> s.copy(dailyCapacity = it) } }
+            SettingSlider("Minimum pages", "Minimum long-term review load, even with a small memorized amount.", settings.minimumPages, 1..30) { viewModel.update { s -> s.copy(minimumPages = it) } }
+            SettingSlider("Rotation days", "Number of days in which the app aims to cycle through memorized pages.", settings.rotationDays, 7..60) { viewModel.update { s -> s.copy(rotationDays = it) } }
+            SettingSlider("Maximum overload", "Allows urgent recovery and backlog work to exceed daily capacity.", settings.maximumOverloadPercent, 100..200, "%") { viewModel.update { s -> s.copy(maximumOverloadPercent = it) } }
+            SettingSlider("Strong reviews to exit recovery", "Consecutive Strong ratings needed before a weak page returns to rotation.", settings.recoveryStrongReviewsRequired, 1..5) { viewModel.update { s -> s.copy(recoveryStrongReviewsRequired = it) } }
             Text("Review order")
+            Text("Controls how long-term pages are prioritized when more pages are due than fit today.", style = MaterialTheme.typography.bodySmall)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 ReviewOrder.entries.forEachIndexed { index, order ->
                     SegmentedButton(
@@ -117,16 +159,17 @@ fun SettingsScreen(
                 }
             }
             SwitchSetting("Auto-advance after rating", settings.autoAdvance) { viewModel.update { s -> s.copy(autoAdvance = it) } }
-            ScheduleField("New schedule", settings.newSchedule) { viewModel.update { s -> s.copy(newSchedule = it) } }
-            ScheduleField("Weak schedule", settings.weakSchedule) { viewModel.update { s -> s.copy(weakSchedule = it) } }
-            ScheduleField("Failed schedule", settings.failedSchedule) { viewModel.update { s -> s.copy(failedSchedule = it) } }
+            Text("Move automatically to the next page after choosing a strength.", style = MaterialTheme.typography.bodySmall)
+            ScheduleField("New schedule", "Day intervals used while newly memorized pages stabilize.", settings.newSchedule) { viewModel.update { s -> s.copy(newSchedule = it) } }
+            ScheduleField("Weak schedule", "Day intervals used to rebuild pages rated Weak.", settings.weakSchedule) { viewModel.update { s -> s.copy(weakSchedule = it) } }
+            ScheduleField("Failed schedule", "Day intervals used after a Failed recitation.", settings.failedSchedule) { viewModel.update { s -> s.copy(failedSchedule = it) } }
 
             HorizontalDivider()
             Text("Notifications", style = MaterialTheme.typography.titleLarge)
             SwitchSetting("Enable reminders", settings.notificationsEnabled) { viewModel.update { s -> s.copy(notificationsEnabled = it) } }
             TimeField("Morning", settings.morningNotificationTime) { viewModel.update { s -> s.copy(morningNotificationTime = it) } }
             TimeField("Evening", settings.eveningNotificationTime) { viewModel.update { s -> s.copy(eveningNotificationTime = it) } }
-            SettingSlider("Weekly summary day (1=Mon)", settings.weeklyNotificationDay, 1..7) { viewModel.update { s -> s.copy(weeklyNotificationDay = it) } }
+            WeeklyDaySlider(settings.weeklyNotificationDay) { viewModel.update { s -> s.copy(weeklyNotificationDay = it) } }
 
             HorizontalDivider()
             Text("Appearance", style = MaterialTheme.typography.titleLarge)
@@ -143,30 +186,87 @@ fun SettingsScreen(
             HorizontalDivider()
             Text("Backup & restore", style = MaterialTheme.typography.titleLarge)
             SwitchSetting("Automatic daily backup", settings.automaticBackupEnabled) { viewModel.setAutomaticBackup(context, it) }
-            Button(onClick = { viewModel.backup(context, serverClientId) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Back up to Google Drive") }
-            OutlinedButton(onClick = { viewModel.restore(context, serverClientId) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Restore from Google Drive") }
+            Button(onClick = { viewModel.backup(context, launchAuthorization) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Back up to Google Drive") }
+            OutlinedButton(onClick = { viewModel.restore(context, launchAuthorization) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Restore from Google Drive") }
             if (state.isBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
             state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         }
     }
 }
 
-@Composable private fun SettingSlider(label: String, value: Int, range: IntRange, suffix: String = "", onChange: (Int) -> Unit) {
-    Column { Text("$label: $value$suffix"); Slider(value.toFloat(), { onChange(it.toInt()) }, valueRange = range.first.toFloat()..range.last.toFloat()) }
+@Composable private fun SettingSlider(label: String, description: String, value: Int, range: IntRange, suffix: String = "", onChange: (Int) -> Unit) {
+    Column {
+        Text("$label: $value$suffix")
+        Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Slider(value.toFloat(), { onChange(it.toInt()) }, valueRange = range.first.toFloat()..range.last.toFloat())
+    }
 }
 
 @Composable private fun SwitchSetting(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(checked, onChange) }
 }
 
-@Composable private fun ScheduleField(label: String, values: List<Int>, onChange: (List<Int>) -> Unit) {
-    OutlinedTextField(
-        value = values.joinToString(","),
-        onValueChange = { text -> text.split(',').mapNotNull(String::trim).mapNotNull(String::toIntOrNull).takeIf(List<Int>::isNotEmpty)?.let(onChange) },
-        label = { Text("$label (days)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
-    )
+@Composable private fun WeeklyDaySlider(isoDay: Int, onChange: (Int) -> Unit) {
+    val sundayFirst = remember {
+        listOf(
+            DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY
+        )
+    }
+    val selectedIndex = sundayFirst.indexOf(DayOfWeek.of(isoDay.coerceIn(1, 7))).coerceAtLeast(0)
+    Column {
+        Text("Weekly summary day: ${sundayFirst[selectedIndex].displayName()}")
+        Text("Day of week for the weekly progress summary.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Slider(
+            value = selectedIndex.toFloat(),
+            onValueChange = { position -> onChange(sundayFirst[position.toInt().coerceIn(0, 6)].value) },
+            valueRange = 0f..6f,
+            steps = 5
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Sunday", style = MaterialTheme.typography.labelSmall)
+            Text("Saturday", style = MaterialTheme.typography.labelSmall)
+        }
+    }
 }
 
+private fun DayOfWeek.displayName(): String = name.lowercase().replaceFirstChar(Char::uppercase)
+
+@Composable private fun ScheduleField(label: String, description: String, values: List<Int>, onChange: (List<Int>) -> Unit) {
+    Column {
+        OutlinedTextField(
+            value = values.joinToString(","),
+            onValueChange = { text -> text.split(',').mapNotNull(String::trim).mapNotNull(String::toIntOrNull).takeIf(List<Int>::isNotEmpty)?.let(onChange) },
+            label = { Text("$label (days)") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+        )
+        Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun TimeField(label: String, value: String, onChange: (String) -> Unit) {
-    OutlinedTextField(value, onChange, label = { Text("$label time (HH:mm)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+    val parsed = remember(value) { runCatching { LocalTime.parse(value) }.getOrDefault(LocalTime.NOON) }
+    var showPicker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val display = remember(parsed) { parsed.format(DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())) }
+    OutlinedButton(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            Text("$label reminder", style = MaterialTheme.typography.labelSmall)
+            Text(display, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+    if (showPicker) {
+        val pickerState = rememberTimePickerState(initialHour = parsed.hour, initialMinute = parsed.minute, is24Hour = false)
+        AlertDialog(
+            onDismissRequest = { showPicker = false },
+            title = { Text("Select $label time") },
+            text = { TimePicker(state = pickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onChange("%02d:%02d".format(Locale.US, pickerState.hour, pickerState.minute))
+                    showPicker = false
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } }
+        )
+    }
 }

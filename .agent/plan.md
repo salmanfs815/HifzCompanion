@@ -136,3 +136,35 @@ The statuses above and in `analytics/.agent/plan.md` were compared with the 24-p
 - `assembleDebug`: passed; debug APK generated.
 - `assembleRelease`: passed with lint-vital; unsigned release APK generated.
 - No connected Android device was available, so instrumentation execution, live notification timing, and Google Drive backup/restore remain unverified at runtime.
+
+## Requested Product Updates - 2026-08-03
+
+### Task_10_Selection_Manual_Logging_And_Settings_Usability
+- **Status:** COMPLETED
+- **Updates:**
+  - Replaced onboarding's numeric Surah range entry with a scrollable named-Surah selector and added Juz selection alongside page ranges and individual pages.
+  - Removed the redundant Daily Target onboarding screen; the target remains automatically calculated.
+  - Added Settings navigation for correcting current memorization while preserving review history for deselected pages.
+  - Added an offline 604-page Madinah reference table so review and page-detail screens show Juz, Surah, and ayah ranges.
+  - Added a dashboard flow for logging extra reviews or newly memorized pages by page, Surah, or Juz, including strength and optional notes. Manual completions update scheduler state and leave today's due queue.
+  - Replaced free-text notification times with a 12-hour Material clock picker and added descriptions to scheduler controls.
+  - Replaced the in-app and launcher logo with the supplied `hifz-companion-logo.png`.
+  - Confirmed the user-level Google OAuth client property is configured and included at build time.
+- **Verification:**
+  - `testDebugUnitTest`: 22 tests passed, 0 failures, including stale next-page correction coverage.
+  - `compileDebugAndroidTestKotlin`: passed.
+  - `lintDebug`: passed.
+  - `assembleDebug` and `assembleRelease`: passed.
+
+### Task_11_Dashboard_Activity_And_Drive_Authorization
+- **Status:** IMPLEMENTED_NEEDS_OAUTH_CONSOLE_VERIFICATION
+- **Updates:**
+  - Centered dashboard-card content and added dashboard Help and Today's Activity actions.
+  - Added a same-day activity log with page references, review type, time, and editable revision strength.
+  - Rating corrections now replay the page's complete review history through the scheduler so its queue, state, and next due date stay consistent.
+  - Replaced numeric weekly-summary-day presentation with a Sunday-first weekday slider while preserving ISO weekday values in persistence.
+  - Reworked Google Drive access around Google Identity Services `AuthorizationClient`, including user-consent resolution handling and actionable OAuth console errors. Drive AppData no longer depends on the Web client ID Gradle property.
+- **Verification:**
+  - `testDebugUnitTest` plus `:scheduler:test`: 23 tests passed, 0 failures, including the Strong-to-Weak activity correction regression.
+  - `assembleDebug`: passed; debug APK generated.
+  - Live Drive backup still requires the Google Cloud project to have an Android OAuth client registered for package `ca.salmanfs.hifzcompanion` and the installed build's SHA-1, Drive API enabled, and the account listed as a test user while the consent screen is in Testing.

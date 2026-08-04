@@ -1,6 +1,8 @@
 package ca.salmanfs.hifzcompanion
 
 import android.os.Bundle
+import android.app.Activity
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +27,12 @@ import ca.salmanfs.hifzcompanion.ui.onboarding.OnboardingScreen
 import ca.salmanfs.hifzcompanion.ui.onboarding.OnboardingViewModel
 import ca.salmanfs.hifzcompanion.ui.review.ReviewSessionScreen
 import ca.salmanfs.hifzcompanion.ui.review.ReviewSessionViewModel
+import ca.salmanfs.hifzcompanion.ui.review.ManualLogScreen
+import ca.salmanfs.hifzcompanion.ui.review.ManualLogViewModel
+import ca.salmanfs.hifzcompanion.ui.memorization.MemorizationStatusScreen
+import ca.salmanfs.hifzcompanion.ui.memorization.MemorizationStatusViewModel
+import ca.salmanfs.hifzcompanion.ui.activity.ActivityLogScreen
+import ca.salmanfs.hifzcompanion.ui.activity.ActivityLogViewModel
 import ca.salmanfs.hifzcompanion.ui.theme.HifzCompanionTheme
 import ca.salmanfs.hifzcompanion.ui.statistics.StatisticsScreen
 import ca.salmanfs.hifzcompanion.ui.statistics.StatisticsViewModel
@@ -34,6 +42,7 @@ import ca.salmanfs.hifzcompanion.ui.pages.QueueListScreen
 import ca.salmanfs.hifzcompanion.ui.pages.QueueListViewModel
 import com.hifzcompanion.core.domain.models.AppTheme
 import com.hifzcompanion.settings.ui.SettingsScreen
+import com.hifzcompanion.settings.ui.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -87,6 +96,8 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToReview = { 
                                         backStack.add(Route.ReviewSession)
                                     },
+                                    onNavigateToManualLog = { backStack.add(Route.ManualLog) },
+                                    onNavigateToActivityLog = { backStack.add(Route.ActivityLog) },
                                     onNavigateToSettings = { backStack.add(Route.Settings) },
                                     onNavigateToStatistics = { backStack.add(Route.Statistics) },
                                     onNavigateToQueue = { backStack.add(Route.QueueList(it)) }
@@ -101,11 +112,38 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            Route.ManualLog -> NavEntry(key) {
+                                val viewModel: ManualLogViewModel = hiltViewModel()
+                                ManualLogScreen(viewModel, onBack = { backStack.removeLastOrNull() })
+                            }
+                            Route.ActivityLog -> NavEntry(key) {
+                                val viewModel: ActivityLogViewModel = hiltViewModel()
+                                ActivityLogScreen(viewModel, onBack = { backStack.removeLastOrNull() })
+                            }
                             Route.Settings -> NavEntry(key) {
+                                val viewModel: SettingsViewModel = hiltViewModel()
+                                val authorizationLauncher = rememberLauncherForActivityResult(
+                                    ActivityResultContracts.StartIntentSenderForResult()
+                                ) { result ->
+                                    viewModel.completeAuthorization(
+                                        this@MainActivity,
+                                        result.data.takeIf { result.resultCode == Activity.RESULT_OK }
+                                    )
+                                }
                                 SettingsScreen(
                                     onBackClick = { backStack.removeLastOrNull() },
-                                    serverClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID
+                                    onEditMemorization = { backStack.add(Route.MemorizationStatus) },
+                                    launchAuthorization = { pendingIntent ->
+                                        authorizationLauncher.launch(
+                                            IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                                        )
+                                    },
+                                    viewModel = viewModel
                                 )
+                            }
+                            Route.MemorizationStatus -> NavEntry(key) {
+                                val viewModel: MemorizationStatusViewModel = hiltViewModel()
+                                MemorizationStatusScreen(viewModel, onBack = { backStack.removeLastOrNull() })
                             }
                             Route.Statistics -> NavEntry(key) {
                                 val viewModel: StatisticsViewModel = hiltViewModel()

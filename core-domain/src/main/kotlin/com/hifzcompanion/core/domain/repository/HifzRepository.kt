@@ -12,6 +12,8 @@ interface HifzRepository {
     fun getProgress(unitId: Int): Flow<Progress?>
     fun getAllReviewEvents(): Flow<List<ReviewRecord>>
     fun getReviewEvents(unitId: Int): Flow<List<ReviewRecord>>
+    suspend fun getReviewEventsSnapshot(unitId: Int): List<ReviewRecord>
+    suspend fun updateReviewEventQuality(eventId: Int, result: ReviewResult)
     suspend fun updateProgress(progress: Progress)
     suspend fun recordReview(
         unitId: Int,

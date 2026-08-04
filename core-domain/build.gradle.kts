@@ -24,6 +24,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.hilt.android)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     // Removed direct hilt-compiler here as it's usually needed in the module that has the @AndroidEntryPoint or @HiltAndroidApp
     // But @Inject in domain is fine.
 }

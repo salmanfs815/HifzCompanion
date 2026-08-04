@@ -1,26 +1,26 @@
 package ca.salmanfs.hifzcompanion.ui.onboarding
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ca.salmanfs.hifzcompanion.ui.components.HifzLogo
 import com.hifzcompanion.core.domain.models.MemorizationOrder
 import com.hifzcompanion.core.domain.models.MushafType
+import com.hifzcompanion.core.ui.MemorizationSelector
+import android.app.Activity
+import android.app.PendingIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +29,13 @@ fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val authorizationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        viewModel.completeDriveAuthorization(result.data.takeIf { result.resultCode == Activity.RESULT_OK })
+    }
+    val launchConsent: (PendingIntent) -> Unit = { pendingIntent ->
+        authorizationLauncher.launch(IntentSenderRequest.Builder(pendingIntent.intentSender).build())
+    }
 
     LaunchedEffect(uiState.isOnboardingComplete) {
         if (uiState.isOnboardingComplete) {
@@ -64,14 +71,13 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                StepIndicator(currentStep = uiState.currentStep, totalSteps = 5)
+                StepIndicator(currentStep = uiState.currentStep, totalSteps = 4)
 
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
                     when (uiState.currentStep) {
                     1 -> GoogleSignInStep(
-                            onSignIn = { viewModel.signIn(context, ca.salmanfs.hifzcompanion.BuildConfig.GOOGLE_SERVER_CLIENT_ID) },
-                            onRestore = { viewModel.restoreFromCloud(context, ca.salmanfs.hifzcompanion.BuildConfig.GOOGLE_SERVER_CLIENT_ID) },
+                            onSignIn = { viewModel.connectGoogleDrive(context, restore = false, launchConsent = launchConsent) },
+                            onRestore = { viewModel.connectGoogleDrive(context, restore = true, launchConsent = launchConsent) },
                             onSkip = { viewModel.nextStep() },
                             isBusy = uiState.isBusy,
                             message = uiState.message
@@ -86,14 +92,7 @@ fun OnboardingScreen(
                         )
                         4 -> ProgressInputStep(
                             selectedPages = uiState.memorizedPages,
-                            onTogglePage = { viewModel.togglePage(it) },
                             onSetPages = { viewModel.setMemorizedPages(it) }
-                        )
-                        5 -> DailyTargetStep(
-                            target = uiState.dailyTargetPages,
-                            isAuto = uiState.isAutoTarget,
-                            onTargetChange = { viewModel.setDailyTarget(it) },
-                            onAutoToggle = { viewModel.setAutoTarget(it) }
                         )
                     }
                 }
@@ -102,7 +101,7 @@ fun OnboardingScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    if (uiState.currentStep < 5) {
+                    if (uiState.currentStep < 4) {
                         Button(onClick = { viewModel.nextStep() }) {
                             Text("Next")
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
@@ -152,7 +151,7 @@ fun GoogleSignInStep(
             modifier = Modifier.fillMaxWidth(),
             enabled = !isBusy
         ) {
-            Text("Sign in with Google")
+            Text("Connect Google Drive")
         }
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
@@ -201,93 +200,15 @@ fun ChooseOrderStep(selected: MemorizationOrder, onSelect: (MemorizationOrder) -
 @Composable
 fun ProgressInputStep(
     selectedPages: List<Int>,
-    onTogglePage: (Int) -> Unit,
     onSetPages: (List<Int>) -> Unit
 ) {
-    var pageStart by rememberSaveable { mutableStateOf("") }
-    var pageEnd by rememberSaveable { mutableStateOf("") }
-    var surahStart by rememberSaveable { mutableStateOf("") }
-    var surahEnd by rememberSaveable { mutableStateOf("") }
-    var showIndividualPages by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Which pages have you memorized?", style = MaterialTheme.typography.headlineSmall)
-        Text("${selectedPages.size} pages selected", style = MaterialTheme.typography.bodyMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NumberField(pageStart, { pageStart = it }, "First page", Modifier.weight(1f))
-            NumberField(pageEnd, { pageEnd = it }, "Last page", Modifier.weight(1f))
-        }
-        Button(
-            onClick = {
-                val first = pageStart.toIntOrNull()
-                val last = pageEnd.toIntOrNull()
-                if (first != null && last != null) onSetPages((minOf(first, last)..maxOf(first, last)).toList())
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Use page range") }
-        HorizontalDivider()
-        Text("Or select completed surahs (Madinah Mushaf)", style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NumberField(surahStart, { surahStart = it }, "First surah", Modifier.weight(1f))
-            NumberField(surahEnd, { surahEnd = it }, "Last surah", Modifier.weight(1f))
-        }
-        OutlinedButton(
-            onClick = {
-                val first = surahStart.toIntOrNull()
-                val last = surahEnd.toIntOrNull()
-                if (first != null && last != null) onSetPages(MadinahSurahPages.pagesForRange(first, last))
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Use completed surahs") }
-        TextButton(onClick = { showIndividualPages = !showIndividualPages }) {
-            Text(if (showIndividualPages) "Hide individual pages" else "Edit individual pages")
-        }
-        if (showIndividualPages) {
-            LazyVerticalGrid(columns = GridCells.Adaptive(64.dp), modifier = Modifier.weight(1f)) {
-                items((1..604).toList()) { page ->
-                    FilterChip(
-                        selected = selectedPages.contains(page),
-                        onClick = { onTogglePage(page) },
-                        label = { Text(page.toString()) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NumberField(value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onValueChange(it.filter(Char::isDigit)) },
-        label = { Text(label) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier
-    )
-}
-
-@Composable
-fun DailyTargetStep(
-    target: Int,
-    isAuto: Boolean,
-    onTargetChange: (Int) -> Unit,
-    onAutoToggle: (Boolean) -> Unit
-) {
-    Column {
-        Text("Set Daily Target", style = MaterialTheme.typography.headlineSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = isAuto, onCheckedChange = onAutoToggle)
-            Text("Auto-calculate (Recommended)")
-        }
-        if (!isAuto) {
-            Slider(
-                value = target.toFloat(),
-                onValueChange = { onTargetChange(it.toInt()) },
-                valueRange = 1f..60f,
-                steps = 58
-            )
-            Text("Target: $target pages per day")
-        }
+        Text("How much have you memorized?", style = MaterialTheme.typography.headlineSmall)
+        Text("Choose by page, scroll through Surah names, or select complete Juz.", style = MaterialTheme.typography.bodyMedium)
+        MemorizationSelector(
+            selectedPages = selectedPages,
+            onSelectionChange = onSetPages,
+            modifier = Modifier.fillMaxWidth().weight(1f)
+        )
     }
 }
