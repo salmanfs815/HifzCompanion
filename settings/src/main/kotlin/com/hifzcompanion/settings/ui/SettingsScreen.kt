@@ -99,11 +99,15 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun performBackupAction(context: Context, session: GoogleSession, restore: Boolean) {
         sessionStore.saveAccessToken(session.accessToken)
-        val result = if (restore) backupManager.performRestore(session.accessToken) else backupManager.performBackup(session.accessToken)
+        val result = if (restore) {
+            backupManager.performRestore(session.accessToken)
+        } else {
+            backupManager.performBackup(session.accessToken)
+        }
         message.value = if (result.isSuccess) {
             if (restore) "Restore complete" else "Backup complete"
         } else result.exceptionOrNull()?.message ?: "Operation failed"
-        if (!restore && state.value.settings.automaticBackupEnabled) BackupWorker.schedule(context)
+        if (!restore && result.isSuccess && state.value.settings.automaticBackupEnabled) BackupWorker.schedule(context)
         busy.value = false
     }
 
@@ -186,8 +190,16 @@ fun SettingsScreen(
             HorizontalDivider()
             Text("Backup & restore", style = MaterialTheme.typography.titleLarge)
             SwitchSetting("Automatic daily backup", settings.automaticBackupEnabled) { viewModel.setAutomaticBackup(context, it) }
-            Button(onClick = { viewModel.backup(context, launchAuthorization) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Back up to Google Drive") }
-            OutlinedButton(onClick = { viewModel.restore(context, launchAuthorization) }, enabled = !state.isBusy, modifier = Modifier.fillMaxWidth()) { Text("Restore from Google Drive") }
+            Button(
+                onClick = { viewModel.backup(context, launchAuthorization) },
+                enabled = !state.isBusy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Back up to Google Drive") }
+            OutlinedButton(
+                onClick = { viewModel.restore(context, launchAuthorization) },
+                enabled = !state.isBusy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Restore from Google Drive") }
             if (state.isBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
             state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         }

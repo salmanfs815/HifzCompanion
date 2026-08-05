@@ -2,6 +2,7 @@ package com.hifzcompanion.backup.auth
 
 import android.content.Context
 import android.util.Base64
+import androidx.core.content.edit
 import com.hifzcompanion.backup.crypto.CryptoManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -16,7 +17,7 @@ class BackupSessionStore @Inject constructor(
 
     fun saveAccessToken(token: String) {
         val encrypted = cryptoManager.encrypt(token.toByteArray(Charsets.UTF_8))
-        preferences.edit().putString(KEY_TOKEN, Base64.encodeToString(encrypted, Base64.NO_WRAP)).apply()
+        preferences.edit { putString(KEY_TOKEN, Base64.encodeToString(encrypted, Base64.NO_WRAP)) }
     }
 
     fun getAccessToken(): String? = runCatching {
@@ -24,7 +25,9 @@ class BackupSessionStore @Inject constructor(
         String(cryptoManager.decrypt(Base64.decode(value, Base64.NO_WRAP)), Charsets.UTF_8)
     }.getOrNull()
 
-    fun clear() = preferences.edit().clear().apply()
+    fun clear() = preferences.edit { clear() }
 
-    private companion object { const val KEY_TOKEN = "encrypted_access_token" }
+    private companion object {
+        const val KEY_TOKEN = "encrypted_access_token"
+    }
 }

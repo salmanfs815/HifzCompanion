@@ -2,9 +2,11 @@ package com.hifzcompanion.notifications
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -37,10 +39,24 @@ class ReviewNotificationWorker @AssistedInject constructor(
         if (android.os.Build.VERSION.SDK_INT >= 33 && ActivityCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return Result.success()
         }
+        val contentIntent = applicationContext.packageManager
+            .getLaunchIntentForPackage(applicationContext.packageName)
+            ?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            ?.let { launchIntent ->
+                PendingIntent.getActivity(
+                    applicationContext,
+                    0,
+                    launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            }
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
+            .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()

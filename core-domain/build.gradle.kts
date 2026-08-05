@@ -19,6 +19,10 @@ android {
     
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { it.enableAndroidTest = false }
+}
+
 dependencies {
     implementation(project(":scheduler"))
     implementation(libs.kotlinx.coroutines.core)

@@ -13,6 +13,10 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { it.enableAndroidTest = false }
+}
+
 dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-ui"))
@@ -22,6 +26,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    testImplementation(libs.junit)
 }
 
 

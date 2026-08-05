@@ -54,7 +54,11 @@ class GetDashboardStatsUseCase @Inject constructor(
             
             val todayReview = dailyTasks.size
             val newMemorization = dailyTasks.count { it.queueType == QueueType.NEW }
-            val recovery = dailyTasks.count { it.queueType == QueueType.RECOVERY_WEAK || it.queueType == QueueType.RECOVERY_FAILED }
+            // Match the Recovery card's destination, including pages moved into
+            // recovery by a review today whose next review is on a future date.
+            val recovery = allProgress.count {
+                it.queueType == QueueType.RECOVERY_WEAK || it.queueType == QueueType.RECOVERY_FAILED
+            }
 
             val qualityValues = events.map {
                 when (it.quality) {

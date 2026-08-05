@@ -18,6 +18,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { it.enableAndroidTest = false }
 }
 
 dependencies {
@@ -37,10 +42,8 @@ dependencies {
     implementation(libs.google.api.services.drive)
     implementation(libs.google.api.client.android)
     implementation(libs.google.http.client.gson)
-    implementation(libs.androidx.security.crypto)
     implementation(libs.tink.android)
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

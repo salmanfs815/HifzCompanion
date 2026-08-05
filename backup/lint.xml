@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Report project TLS issues, but ignore the implementation bundled inside Google's client. -->
+    <issue id="TrustAllX509TrustManager">
+        <ignore regexp=".*google-http-client.*" />
+    </issue>
+</lint>

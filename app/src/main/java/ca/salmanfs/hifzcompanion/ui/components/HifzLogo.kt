@@ -10,7 +10,7 @@ import ca.salmanfs.hifzcompanion.R
 @Composable
 fun HifzLogo(modifier: Modifier = Modifier) {
     Image(
-        painter = painterResource(R.drawable.ic_launcher_logo),
+        painter = painterResource(R.drawable.hifz_logo),
         contentDescription = "Hifz Companion Logo",
         modifier = modifier,
         contentScale = ContentScale.Fit

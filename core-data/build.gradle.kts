@@ -20,6 +20,10 @@ android {
     
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { it.enableAndroidTest = false }
+}
+
 dependencies {
     implementation(project(":core-domain"))
     implementation(project(":scheduler"))

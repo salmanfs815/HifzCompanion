@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +31,7 @@ class StatisticsViewModel @Inject constructor(getStats: GetDashboardStatsUseCase
 @Composable
 fun StatisticsScreen(viewModel: StatisticsViewModel, onBack: () -> Unit) {
     val stats = viewModel.stats.collectAsStateWithLifecycle().value
+    val locale = LocalConfiguration.current.locales[0]
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("Statistics") },
@@ -42,12 +44,12 @@ fun StatisticsScreen(viewModel: StatisticsViewModel, onBack: () -> Unit) {
             val values = listOf(
                 "Pages memorized" to stats.totalMemorizedPages.toString(),
                 "Pages due today" to stats.pagesDueToday.toString(),
-                "Average quality" to String.format("%.1f / 4", stats.averageQuality),
+                "Average quality" to String.format(locale, "%.1f / 4", stats.averageQuality),
                 "Current streak" to "${stats.currentStreak} days",
                 "Longest streak" to "${stats.longestStreak} days",
                 "Missed review days" to stats.missedReviewDays.toString(),
                 "Backlog" to stats.backlogCount.toString(),
-                "Average reviews/day" to String.format("%.1f", stats.averageReviewsPerDay),
+                "Average reviews/day" to String.format(locale, "%.1f", stats.averageReviewsPerDay),
                 "Health score" to "${stats.healthScore}% • ${HifzAnalytics.healthLabel(stats.healthScore)}"
             )
             LazyVerticalGrid(

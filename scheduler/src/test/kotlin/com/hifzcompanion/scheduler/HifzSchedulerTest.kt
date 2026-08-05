@@ -69,7 +69,7 @@ class HifzSchedulerTest {
     }
 
     @Test
-    fun `scheduleNext should restart NEW on FAILED`() {
+    fun `scheduleNext should enter failed recovery on FAILED`() {
         val progress = Progress(
             unitId = 1,
             queueType = QueueType.NEW,
@@ -81,7 +81,8 @@ class HifzSchedulerTest {
 
         val next = scheduler.scheduleNext(progress, ReviewResult.FAILED, today)
 
-        assertEquals(QueueType.NEW, next.queueType)
+        assertEquals(QueueType.RECOVERY_FAILED, next.queueType)
+        assertEquals(SchedulerStage.RECOVERY, next.stage)
         assertEquals(0, next.currentStep)
         assertEquals(today.plusDays(0), next.nextReviewDate)
     }

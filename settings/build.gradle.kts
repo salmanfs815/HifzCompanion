@@ -16,6 +16,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { it.enableAndroidTest = false }
 }
 
 dependencies {

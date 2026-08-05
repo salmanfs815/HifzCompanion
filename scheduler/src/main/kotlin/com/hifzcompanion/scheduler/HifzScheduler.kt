@@ -127,12 +127,11 @@ class HifzScheduler(
                 )
             }
             ReviewResult.FAILED -> {
-                // Restart as newly memorized
                 progress.copy(
-                    queueType = QueueType.NEW,
-                    stage = SchedulerStage.NEW,
+                    queueType = QueueType.RECOVERY_FAILED,
+                    stage = SchedulerStage.RECOVERY,
                     currentStep = 0,
-                    nextReviewDate = today.plusDays(config.newSchedule[0].toLong()),
+                    nextReviewDate = today.plusDays(config.failedSchedule[0].toLong()),
                     lastReviewDate = today,
                     lastResult = result,
                     strength = (progress.strength - 30).coerceAtLeast(0),

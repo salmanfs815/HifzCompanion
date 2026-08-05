@@ -46,7 +46,11 @@ class OnboardingViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
     private var pendingRestore = false
 
-    fun connectGoogleDrive(context: Context, restore: Boolean, launchConsent: (PendingIntent) -> Unit) {
+    fun connectGoogleDrive(
+        context: Context,
+        restore: Boolean,
+        launchConsent: (PendingIntent) -> Unit
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, message = null) }
             try {

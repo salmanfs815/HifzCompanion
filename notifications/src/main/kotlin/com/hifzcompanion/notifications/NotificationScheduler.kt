@@ -13,13 +13,21 @@ import javax.inject.Singleton
 @Singleton
 class NotificationScheduler @Inject constructor(@param:ApplicationContext private val context: Context) {
     fun apply(settings: UserSettings) {
+        schedule(settings, ExistingPeriodicWorkPolicy.UPDATE)
+    }
+
+    fun reschedule(settings: UserSettings) {
+        schedule(settings, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE)
+    }
+
+    private fun schedule(settings: UserSettings, policy: ExistingPeriodicWorkPolicy) {
         if (!settings.notificationsEnabled) {
             cancelAll()
             return
         }
-        scheduleDaily("morning_review_notification", NotificationKind.MORNING, settings.morningNotificationTime)
-        scheduleDaily("evening_review_notification", NotificationKind.EVENING, settings.eveningNotificationTime)
-        scheduleWeekly(settings.weeklyNotificationDay, settings.eveningNotificationTime)
+        scheduleDaily("morning_review_notification", NotificationKind.MORNING, settings.morningNotificationTime, policy)
+        scheduleDaily("evening_review_notification", NotificationKind.EVENING, settings.eveningNotificationTime, policy)
+        scheduleWeekly(settings.weeklyNotificationDay, settings.eveningNotificationTime, policy)
     }
 
     fun cancelAll() {
@@ -27,16 +35,16 @@ class NotificationScheduler @Inject constructor(@param:ApplicationContext privat
             .forEach { WorkManager.getInstance(context).cancelUniqueWork(it) }
     }
 
-    private fun scheduleDaily(name: String, kind: NotificationKind, time: String) {
+    private fun scheduleDaily(name: String, kind: NotificationKind, time: String, policy: ExistingPeriodicWorkPolicy) {
         val delay = Duration.between(ZonedDateTime.now(), nextDaily(time)).toMillis().coerceAtLeast(0)
         val request = PeriodicWorkRequestBuilder<ReviewNotificationWorker>(24, TimeUnit.HOURS)
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(ReviewNotificationWorker.KEY_KIND to kind.name))
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, ExistingPeriodicWorkPolicy.UPDATE, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, policy, request)
     }
 
-    private fun scheduleWeekly(day: Int, time: String) {
+    private fun scheduleWeekly(day: Int, time: String, policy: ExistingPeriodicWorkPolicy) {
         val now = ZonedDateTime.now()
         val targetDay = DayOfWeek.of(day.coerceIn(1, 7))
         var target = now.with(TemporalAdjusters.nextOrSame(targetDay)).with(parseTime(time)).withSecond(0).withNano(0)
@@ -45,7 +53,7 @@ class NotificationScheduler @Inject constructor(@param:ApplicationContext privat
             .setInitialDelay(Duration.between(now, target).toMillis(), TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(ReviewNotificationWorker.KEY_KIND to NotificationKind.WEEKLY.name))
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork("weekly_review_notification", ExistingPeriodicWorkPolicy.UPDATE, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("weekly_review_notification", policy, request)
     }
 
     private fun nextDaily(time: String): ZonedDateTime {

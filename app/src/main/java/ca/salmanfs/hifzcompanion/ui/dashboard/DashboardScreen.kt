@@ -17,7 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hifzcompanion.core.domain.usecase.DashboardStats
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +32,8 @@ fun DashboardScreen(
     onNavigateToQueue: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isExpanded = LocalConfiguration.current.screenWidthDp >= 840
+    val windowSize = LocalWindowInfo.current.containerSize
+    val isExpanded = with(LocalDensity.current) { windowSize.width.toDp() >= 840.dp }
     var showHelp by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(

@@ -1,7 +1,6 @@
 package com.hifzcompanion.backup
 
-import com.hifzcompanion.backup.crypto.CryptoManager
-import com.hifzcompanion.backup.drive.GoogleDriveManager
+import com.hifzcompanion.backup.drive.BackupStorage
 import com.hifzcompanion.core.domain.repository.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,19 +13,20 @@ import javax.inject.Singleton
 @Singleton
 class BackupManager @Inject constructor(
     private val backupRepository: BackupRepository,
-    private val cryptoManager: CryptoManager,
-    private val driveManager: GoogleDriveManager
+    private val driveManager: BackupStorage
 ) {
-    private val BACKUP_FILE_NAME = "hifz_backup.bin"
+    private val backupFileName = "hifz_backup.json"
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
 
     suspend fun performBackup(accessToken: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val snapshot = backupRepository.createSnapshot()
-            val jsonString = Json.encodeToString(snapshot)
-            val encryptedData = cryptoManager.encrypt(jsonString.toByteArray())
-            
-            val inputStream = ByteArrayInputStream(encryptedData)
-            val fileId = driveManager.uploadBackup(accessToken, inputStream, BACKUP_FILE_NAME)
+            val jsonString = json.encodeToString(snapshot)
+            val inputStream = ByteArrayInputStream(jsonString.toByteArray(Charsets.UTF_8))
+            val fileId = driveManager.uploadBackup(accessToken, inputStream, backupFileName)
             Result.success(fileId)
         } catch (e: Exception) {
             Result.failure(e)
@@ -35,13 +35,11 @@ class BackupManager @Inject constructor(
 
     suspend fun performRestore(accessToken: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val inputStream = driveManager.downloadBackup(accessToken, BACKUP_FILE_NAME)
+            val inputStream = driveManager.downloadBackup(accessToken, backupFileName)
                 ?: return@withContext Result.failure(Exception("Backup not found"))
             
-            val encryptedData = inputStream.readBytes()
-            val decryptedData = cryptoManager.decrypt(encryptedData)
-            val jsonString = String(decryptedData)
-            val snapshot = Json.decodeFromString<com.hifzcompanion.core.domain.models.BackupSnapshot>(jsonString)
+            val jsonString = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val snapshot = json.decodeFromString<com.hifzcompanion.core.domain.models.BackupSnapshot>(jsonString)
             
             backupRepository.restoreSnapshot(snapshot)
             Result.success(Unit)
@@ -49,4 +47,5 @@ class BackupManager @Inject constructor(
             Result.failure(e)
         }
     }
+
 }

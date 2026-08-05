@@ -1,12 +1,10 @@
 package com.hifzcompanion.backup.drive
 
-import android.content.Context
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.InputStreamContent
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.File
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
@@ -16,12 +14,11 @@ import javax.inject.Singleton
 
 @Singleton
 class GoogleDriveManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) {
+) : BackupStorage {
     private val jsonFactory = GsonFactory.getDefaultInstance()
     private val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
 
-    suspend fun uploadBackup(accessToken: String, inputStream: InputStream, fileName: String): String = withContext(Dispatchers.IO) {
+    override suspend fun uploadBackup(accessToken: String, inputStream: InputStream, fileName: String): String = withContext(Dispatchers.IO) {
         val driveService = getDriveService(accessToken)
 
         val fileMetadata = File().apply {
@@ -29,7 +26,7 @@ class GoogleDriveManager @Inject constructor(
             parents = Collections.singletonList("appDataFolder")
         }
 
-        val mediaContent = InputStreamContent("application/octet-stream", inputStream)
+        val mediaContent = InputStreamContent("application/json", inputStream)
         
         // Check if file already exists
         val existingFiles = driveService.files().list()
@@ -52,7 +49,7 @@ class GoogleDriveManager @Inject constructor(
         }
     }
 
-    suspend fun downloadBackup(accessToken: String, fileName: String): InputStream? = withContext(Dispatchers.IO) {
+    override suspend fun downloadBackup(accessToken: String, fileName: String): InputStream? = withContext(Dispatchers.IO) {
         val driveService = getDriveService(accessToken)
 
         val existingFiles = driveService.files().list()
