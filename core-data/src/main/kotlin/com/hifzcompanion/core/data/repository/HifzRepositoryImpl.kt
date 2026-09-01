@@ -73,9 +73,16 @@ class HifzRepositoryImpl @Inject constructor(
         )
     }
 
-    override fun getTodayReviewCount(): Flow<Int> {
-        val startOfToday = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        return hifzDao.getReviewCountSince(startOfToday)
+    override fun getReviewCountForDate(date: LocalDate): Flow<Int> {
+        val zone = ZoneId.systemDefault()
+        return hifzDao.getReviewCountBetween(
+            date.atStartOfDay(zone).toInstant().toEpochMilli(),
+            date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        )
+    }
+
+    override suspend fun deleteProgressAndHistory(unitId: Int) {
+        hifzDao.deleteProgressAndHistory(unitId)
     }
 
     private fun UserPageEntity.toDomain(): Progress {

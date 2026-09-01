@@ -23,6 +23,8 @@ class UpdateMemorizationStatusUseCase @Inject constructor(
             when {
                 progress.unitId in selected && (progress.dateMemorized == null || !progress.active) ->
                     repository.updateProgress(progress.asMemorized(today))
+                progress.unitId !in selected && progress.dateMemorized != null ->
+                    repository.deleteProgressAndHistory(progress.unitId)
                 progress.unitId !in selected && progress.active ->
                     repository.updateProgress(progress.copy(active = false))
             }

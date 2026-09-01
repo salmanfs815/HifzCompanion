@@ -42,7 +42,8 @@ import java.util.Locale
 data class SettingsUiState(
     val settings: UserSettings = UserSettings(),
     val isBusy: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val lastSuccessfulBackup: Long? = null
 )
 
 @HiltViewModel
@@ -54,7 +55,10 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val busy = MutableStateFlow(false)
     private val message = MutableStateFlow<String?>(null)
-    val state = combine(repository.getUserSettings(), busy, message, ::SettingsUiState)
+    val state = combine(repository.getUserSettings(), busy, message, sessionStore.lastSuccessfulBackup) {
+            settings, isBusy, status, lastBackup ->
+        SettingsUiState(settings, isBusy, status, lastBackup)
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun update(transform: (UserSettings) -> UserSettings) = viewModelScope.launch {
@@ -107,6 +111,7 @@ class SettingsViewModel @Inject constructor(
         message.value = if (result.isSuccess) {
             if (restore) "Restore complete" else "Backup complete"
         } else result.exceptionOrNull()?.message ?: "Operation failed"
+        if (!restore && result.isSuccess) sessionStore.recordSuccessfulBackup()
         if (!restore && result.isSuccess && state.value.settings.automaticBackupEnabled) BackupWorker.schedule(context)
         busy.value = false
     }
@@ -189,6 +194,15 @@ fun SettingsScreen(
 
             HorizontalDivider()
             Text("Backup & restore", style = MaterialTheme.typography.titleLarge)
+            Text(
+                state.lastSuccessfulBackup?.let { timestamp ->
+                    "Last successful backup: " + java.time.Instant.ofEpochMilli(timestamp)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a", Locale.getDefault()))
+                } ?: "Last successful backup: Never",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             SwitchSetting("Automatic daily backup", settings.automaticBackupEnabled) { viewModel.setAutomaticBackup(context, it) }
             Button(
                 onClick = { viewModel.backup(context, launchAuthorization) },

@@ -147,7 +147,12 @@ class HifzScheduler(
         memorizedPagesCount: Int,
         config: SchedulerConfig = SchedulerConfig(dailyCapacity = maxDailyCapacity, rotationDays = rotationDays)
     ): List<Progress> {
-        val dueTasks = allProgress.filter { it.active && it.nextReviewDate <= today }
+        val dueTasks = allProgress.filter {
+            it.active &&
+                it.dateMemorized != null &&
+                it.lastReviewDate != today &&
+                it.nextReviewDate <= today
+        }
         
         val recovery = dueTasks.filter { it.queueType == QueueType.RECOVERY_WEAK || it.queueType == QueueType.RECOVERY_FAILED }
             .sortedBy { it.nextReviewDate }
@@ -162,10 +167,7 @@ class HifzScheduler(
             SchedulerReviewOrder.PAGE_ORDER -> longTermCandidates.sortedBy { it.unitId }
         }
 
-        val maxCapacity = maxOf(
-            config.dailyCapacity,
-            (config.dailyCapacity * config.maximumOverloadPercent / 100.0).toInt()
-        )
+        val maxCapacity = maximumDailyTasks(config)
         val priorityTasks = recovery + newTasks
         val remainingCapacity = (maxCapacity - priorityTasks.size).coerceAtLeast(0)
         val longTermTarget = calculateLongTermPagesPerDay(memorizedPagesCount, config)
@@ -173,6 +175,13 @@ class HifzScheduler(
             .distinctBy { it.unitId }
             .take(maxCapacity)
     }
+
+    fun maximumDailyTasks(
+        config: SchedulerConfig = SchedulerConfig(dailyCapacity = maxDailyCapacity, rotationDays = rotationDays)
+    ): Int = maxOf(
+        config.dailyCapacity,
+        (config.dailyCapacity * config.maximumOverloadPercent / 100.0).toInt()
+    )
 
     fun calculateLongTermPagesPerDay(
         memorizedPages: Int,

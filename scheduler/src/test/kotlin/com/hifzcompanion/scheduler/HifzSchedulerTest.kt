@@ -89,9 +89,9 @@ class HifzSchedulerTest {
 
     @Test
     fun `getDailyTasks should prioritize Recovery over New`() {
-        val recoveryTask = Progress(1, QueueType.RECOVERY_FAILED, 0, today, null, null)
-        val newTask = Progress(2, QueueType.NEW, 0, today, null, null)
-        val longTermTask = Progress(3, QueueType.LONG_TERM, 0, today, null, null)
+        val recoveryTask = Progress(1, QueueType.RECOVERY_FAILED, 0, today, null, null, dateMemorized = today)
+        val newTask = Progress(2, QueueType.NEW, 0, today, null, null, dateMemorized = today)
+        val longTermTask = Progress(3, QueueType.LONG_TERM, 0, today, null, null, dateMemorized = today)
 
         val tasks = scheduler.getDailyTasks(listOf(longTermTask, newTask, recoveryTask), today, 0)
 
@@ -103,7 +103,7 @@ class HifzSchedulerTest {
 
     @Test
     fun `getDailyTasks should limit by capacity`() {
-        val manyTasks = (1..20).map { Progress(it, QueueType.NEW, 0, today, null, null) }
+        val manyTasks = (1..20).map { Progress(it, QueueType.NEW, 0, today, null, null, dateMemorized = today) }
         
         // maxDailyCapacity is 10, so 150% is 15
         val tasks = scheduler.getDailyTasks(manyTasks, today, 0)
@@ -173,9 +173,17 @@ class HifzSchedulerTest {
     @Test
     fun `inactive and future pages are excluded`() {
         val inactive = Progress(1, QueueType.NEW, 0, today, null, null, active = false)
-        val future = Progress(2, QueueType.NEW, 0, today.plusDays(1), null, null)
+        val future = Progress(2, QueueType.NEW, 0, today.plusDays(1), null, null, dateMemorized = today)
 
         assertEquals(emptyList<Progress>(), scheduler.getDailyTasks(listOf(inactive, future), today, 0))
+    }
+
+    @Test
+    fun `not yet memorized and already reviewed pages are excluded`() {
+        val suggestion = Progress(1, QueueType.NEW, 0, today, null, null, dateMemorized = null)
+        val reviewed = Progress(2, QueueType.LONG_TERM, 0, today, today, ReviewResult.GOOD, dateMemorized = today.minusDays(30))
+
+        assertEquals(emptyList<Progress>(), scheduler.getDailyTasks(listOf(suggestion, reviewed), today, 1))
     }
 
     @Test

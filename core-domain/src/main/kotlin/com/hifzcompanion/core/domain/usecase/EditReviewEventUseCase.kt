@@ -47,7 +47,13 @@ class EditReviewEventUseCase @Inject constructor(
                 replayed = replayed.copy(nextReviewDate = reviewDate.plusDays(1))
             }
         }
-        repository.updateProgress(replayed.copy(active = current.active, notes = current.notes))
+        repository.updateProgress(
+            replayed.copy(
+                nextReviewDate = maxOf(replayed.nextReviewDate, LocalDate.now()),
+                active = current.active,
+                notes = current.notes
+            )
+        )
     }
 
     private fun ReviewRecord.reviewDate(): LocalDate =

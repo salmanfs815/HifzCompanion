@@ -27,7 +27,7 @@ class InitializeUserProgressUseCase @Inject constructor(
                     stage = SchedulerStage.ROTATING,
                     currentStep = 0,
                     nextReviewDate = today, // Start reviewing from today/tomorrow
-                    lastReviewDate = today,
+                    lastReviewDate = null,
                     lastResult = null,
                     dateMemorized = today
                 )

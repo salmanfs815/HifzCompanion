@@ -24,5 +24,6 @@ interface HifzRepository {
         notes: String? = null
     )
 
-    fun getTodayReviewCount(): Flow<Int>
+    fun getReviewCountForDate(date: LocalDate): Flow<Int>
+    suspend fun deleteProgressAndHistory(unitId: Int)
 }

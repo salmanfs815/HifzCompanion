@@ -57,6 +57,20 @@ class LogManualReviewUseCaseTest {
     }
 
     @Test
+    fun removingMemorizedPageDeletesItsProgressAndHistory() = runTest {
+        val today = LocalDate.now()
+        val repository = FakeHifzRepository(
+            Progress(10, QueueType.LONG_TERM, 0, today, today.minusDays(1), ReviewResult.GOOD, dateMemorized = today.minusYears(1))
+        )
+        repository.events += ReviewRecord(1, 10, 0, ReviewResult.GOOD, ReviewType.SCHEDULED)
+
+        UpdateMemorizationStatusUseCase(repository, FakeSettingsRepository())(emptyList())
+
+        assertFalse(repository.progress.value.containsKey(10))
+        assertTrue(repository.events.none { it.pageId == 10 })
+    }
+
+    @Test
     fun correctingTodaysStrengthReplaysSchedulerState() = runTest {
         val today = LocalDate.now()
         val repository = FakeHifzRepository(
@@ -101,5 +115,9 @@ private class FakeHifzRepository(vararg initial: Progress) : HifzRepository {
     override suspend fun recordReview(unitId: Int, result: ReviewResult, date: LocalDate, reviewType: ReviewType, durationSeconds: Int, notes: String?) {
         events += ReviewRecord(events.size + 1, unitId, 0, result, reviewType, durationSeconds, notes)
     }
-    override fun getTodayReviewCount(): Flow<Int> = flowOf(0)
+    override fun getReviewCountForDate(date: LocalDate): Flow<Int> = flowOf(0)
+    override suspend fun deleteProgressAndHistory(unitId: Int) {
+        progress.update { it - unitId }
+        events.removeAll { it.pageId == unitId }
+    }
 }

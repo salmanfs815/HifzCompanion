@@ -100,6 +100,18 @@ interface HifzDao {
         insertUserSettings(settings)
     }
 
-    @Query("SELECT COUNT(DISTINCT pageId) FROM review_events WHERE timestamp >= :since")
-    fun getReviewCountSince(since: Long): Flow<Int>
+    @Query("SELECT COUNT(DISTINCT pageId) FROM review_events WHERE timestamp >= :start AND timestamp < :end")
+    fun getReviewCountBetween(start: Long, end: Long): Flow<Int>
+
+    @Query("DELETE FROM review_events WHERE pageId = :pageId")
+    suspend fun deleteReviewEventsForPage(pageId: Int)
+
+    @Query("DELETE FROM user_pages WHERE pageId = :pageId")
+    suspend fun deleteUserPage(pageId: Int)
+
+    @androidx.room.Transaction
+    suspend fun deleteProgressAndHistory(pageId: Int) {
+        deleteReviewEventsForPage(pageId)
+        deleteUserPage(pageId)
+    }
 }

@@ -57,7 +57,8 @@ fun ReviewSessionScreen(
                                 pageId = progress.unitId,
                                 current = state.currentIndex + 1,
                                 total = state.tasks.size,
-                                onRate = viewModel::submitRating
+                                onRate = viewModel::submitRating,
+                                onSkip = viewModel::skipCurrentPage
                             )
                         }
                     }
@@ -72,7 +73,8 @@ fun ReviewContent(
     pageId: Int,
     current: Int,
     total: Int,
-    onRate: (ReviewResult) -> Unit
+    onRate: (ReviewResult) -> Unit,
+    onSkip: () -> Unit
 ) {
     val reference = remember(pageId) { QuranMetadata.referenceForPage(pageId) }
     Column(
@@ -115,6 +117,12 @@ fun ReviewContent(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 8.dp)
         )
+
+        TextButton(onClick = onSkip, enabled = current < total) {
+            Icon(Icons.Rounded.SkipNext, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Skip for now")
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 

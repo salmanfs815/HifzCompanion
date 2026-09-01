@@ -75,7 +75,7 @@ fun MemorizationStatusScreen(
                 Modifier.fillMaxSize().padding(padding).widthIn(max = 720.dp).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Correct the pages you have memorized. Review history is preserved for pages you remove.")
+                Text("Correct the pages you have memorized. Removed pages and their review history are deleted.")
                 MemorizationSelector(state.selectedPages, viewModel::select, Modifier.weight(1f).fillMaxWidth())
                 state.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Button(

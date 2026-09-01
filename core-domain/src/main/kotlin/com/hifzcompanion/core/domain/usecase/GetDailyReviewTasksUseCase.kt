@@ -7,7 +7,8 @@ import com.hifzcompanion.core.domain.repository.UserSettingsRepository
 import com.hifzcompanion.core.domain.models.toSchedulerConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import java.time.LocalDate
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
 class GetDailyReviewTasksUseCase @Inject constructor(
@@ -15,15 +16,23 @@ class GetDailyReviewTasksUseCase @Inject constructor(
     private val scheduler: HifzScheduler,
     private val settingsRepository: UserSettingsRepository
 ) {
+    @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<List<Progress>> {
-        val today = LocalDate.now()
-        return combine(repository.getAllProgress(), settingsRepository.getUserSettings()) { allProgress, settings ->
-            scheduler.getDailyTasks(
-                allProgress = allProgress,
-                today = today,
-                memorizedPagesCount = allProgress.count { it.dateMemorized != null },
-                config = settings.toSchedulerConfig()
-            )
+        return systemDateFlow().flatMapLatest { today ->
+            combine(
+                repository.getAllProgress(),
+                settingsRepository.getUserSettings(),
+                repository.getReviewCountForDate(today)
+            ) { allProgress, settings, completedToday ->
+                val config = settings.toSchedulerConfig()
+                val remainingAllowance = (scheduler.maximumDailyTasks(config) - completedToday).coerceAtLeast(0)
+                scheduler.getDailyTasks(
+                    allProgress = allProgress,
+                    today = today,
+                    memorizedPagesCount = allProgress.count { it.active && it.dateMemorized != null },
+                    config = config
+                ).take(remainingAllowance)
+            }
         }
     }
 }

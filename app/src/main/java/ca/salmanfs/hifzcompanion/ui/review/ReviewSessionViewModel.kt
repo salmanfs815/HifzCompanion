@@ -6,6 +6,7 @@ import com.hifzcompanion.core.domain.usecase.GetDailyReviewTasksUseCase
 import com.hifzcompanion.core.domain.usecase.RecordReviewUseCase
 import com.hifzcompanion.scheduler.models.Progress
 import com.hifzcompanion.scheduler.models.ReviewResult
+import com.hifzcompanion.notifications.ReviewNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -25,7 +26,8 @@ sealed interface ReviewUiState {
 @HiltViewModel
 class ReviewSessionViewModel @Inject constructor(
     private val getDailyReviewTasksUseCase: GetDailyReviewTasksUseCase,
-    private val recordReviewUseCase: RecordReviewUseCase
+    private val recordReviewUseCase: RecordReviewUseCase,
+    private val notificationManager: ReviewNotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ReviewUiState>(ReviewUiState.Loading)
@@ -35,7 +37,8 @@ class ReviewSessionViewModel @Inject constructor(
         viewModelScope.launch {
             getDailyReviewTasksUseCase().collect { tasks ->
                 if (_uiState.value is ReviewUiState.Loading) {
-                    _uiState.value = ReviewUiState.Session(tasks, 0)
+                    _uiState.value = ReviewUiState.Session(tasks, 0, isFinished = tasks.isEmpty())
+                    if (tasks.isEmpty()) notificationManager.dismissDailyReminders()
                 }
             }
         }
@@ -53,7 +56,19 @@ class ReviewSessionViewModel @Inject constructor(
                 _uiState.value = currentState.copy(currentIndex = nextIndex)
             } else {
                 _uiState.value = currentState.copy(currentIndex = nextIndex, isFinished = true)
+                notificationManager.dismissDailyReminders()
             }
         }
+    }
+
+    fun skipCurrentPage() {
+        val currentState = _uiState.value as? ReviewUiState.Session ?: return
+        if (currentState.isFinished || currentState.currentIndex >= currentState.tasks.lastIndex) return
+        val current = currentState.tasks[currentState.currentIndex]
+        val reordered = currentState.tasks.toMutableList().apply {
+            removeAt(currentState.currentIndex)
+            add(current)
+        }
+        _uiState.value = currentState.copy(tasks = reordered)
     }
 }

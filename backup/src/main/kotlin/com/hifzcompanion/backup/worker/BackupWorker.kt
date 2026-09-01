@@ -29,6 +29,7 @@ class BackupWorker @AssistedInject constructor(
         val result = backupManager.performBackup(accessToken)
         
         return if (result.isSuccess) {
+            sessionStore.recordSuccessfulBackup()
             Result.success()
         } else {
             if (runAttemptCount < 3) Result.retry() else Result.failure()

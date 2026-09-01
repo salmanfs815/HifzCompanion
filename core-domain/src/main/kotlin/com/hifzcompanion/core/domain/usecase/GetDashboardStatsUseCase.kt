@@ -5,6 +5,8 @@ import com.hifzcompanion.scheduler.HifzScheduler
 import com.hifzcompanion.scheduler.models.QueueType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.hifzcompanion.core.domain.repository.UserSettingsRepository
 import com.hifzcompanion.core.domain.models.toSchedulerConfig
 import com.hifzcompanion.scheduler.models.ReviewResult
@@ -37,16 +39,21 @@ class GetDashboardStatsUseCase @Inject constructor(
     private val scheduler: HifzScheduler,
     private val settingsRepository: UserSettingsRepository
 ) {
+    @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<DashboardStats> {
-        val today = LocalDate.now()
-        return combine(
-            repository.getAllProgress(),
-            repository.getTodayReviewCount(),
-            repository.getAllReviewEvents(),
-            settingsRepository.getUserSettings()
-        ) { allProgress, todayCount, events, settings ->
-            val memorized = allProgress.filter { it.dateMemorized != null }
-            val dailyTasks = scheduler.getDailyTasks(allProgress, today, memorized.size, settings.toSchedulerConfig())
+        return systemDateFlow().flatMapLatest { today ->
+            combine(
+                repository.getAllProgress(),
+                repository.getReviewCountForDate(today),
+                repository.getAllReviewEvents(),
+                settingsRepository.getUserSettings()
+            ) { allProgress, rawTodayCount, events, settings ->
+                val memorized = allProgress.filter { it.active && it.dateMemorized != null }
+                val config = settings.toSchedulerConfig()
+                val maximum = scheduler.maximumDailyTasks(config)
+                val todayCount = rawTodayCount.coerceAtMost(maximum)
+                val dailyTasks = scheduler.getDailyTasks(allProgress, today, memorized.size, config)
+                    .take((maximum - todayCount).coerceAtLeast(0))
             
             val totalMemorized = memorized.size
             val overdue = memorized.count { it.nextReviewDate < today }
@@ -57,7 +64,7 @@ class GetDashboardStatsUseCase @Inject constructor(
             // Match the Recovery card's destination, including pages moved into
             // recovery by a review today whose next review is on a future date.
             val recovery = allProgress.count {
-                it.queueType == QueueType.RECOVERY_WEAK || it.queueType == QueueType.RECOVERY_FAILED
+                it.active && (it.queueType == QueueType.RECOVERY_WEAK || it.queueType == QueueType.RECOVERY_FAILED)
             }
 
             val qualityValues = events.map {
@@ -91,23 +98,24 @@ class GetDashboardStatsUseCase @Inject constructor(
             val consistencyBonus = (currentStreak * 2).coerceAtMost(10)
             val healthScore = (100 - overdue * 2 - weakCount * 3 - failedCount * 5 - missedDays + consistencyBonus).coerceIn(0, 100)
 
-            DashboardStats(
-                todayProgressPages = todayCount,
-                totalProgressPages = todayReview + todayCount, // Those due + those already done
-                todayReviewCount = todayReview,
-                newMemorizationCount = newMemorization,
-                recoveryCount = recovery,
-                overdueCount = overdue,
-                currentStreak = currentStreak,
-                totalMemorizedPages = totalMemorized,
-                pagesDueToday = dueToday,
-                healthScore = healthScore,
-                averageQuality = averageQuality,
-                longestStreak = longestStreak,
-                missedReviewDays = missedDays,
-                backlogCount = overdue,
-                averageReviewsPerDay = averageReviews
-            )
+                DashboardStats(
+                    todayProgressPages = todayCount,
+                    totalProgressPages = todayReview + todayCount,
+                    todayReviewCount = todayReview,
+                    newMemorizationCount = newMemorization,
+                    recoveryCount = recovery,
+                    overdueCount = overdue,
+                    currentStreak = currentStreak,
+                    totalMemorizedPages = totalMemorized,
+                    pagesDueToday = dueToday,
+                    healthScore = healthScore,
+                    averageQuality = averageQuality,
+                    longestStreak = longestStreak,
+                    missedReviewDays = missedDays,
+                    backlogCount = overdue,
+                    averageReviewsPerDay = averageReviews
+                )
+            }
         }
     }
 }

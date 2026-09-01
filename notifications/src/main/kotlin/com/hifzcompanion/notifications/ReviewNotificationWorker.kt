@@ -60,7 +60,7 @@ class ReviewNotificationWorker @AssistedInject constructor(
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-        notifySafely(kind.ordinal + 100, notification)
+        notifySafely(notificationId(kind), notification)
         return Result.success()
     }
 
@@ -76,6 +76,14 @@ class ReviewNotificationWorker @AssistedInject constructor(
 
     companion object {
         const val KEY_KIND = "notification_kind"
+        const val MORNING_NOTIFICATION_ID = 100
+        const val EVENING_NOTIFICATION_ID = 101
         private const val CHANNEL_ID = "hifz_review_reminders"
+
+        private fun notificationId(kind: NotificationKind) = when (kind) {
+            NotificationKind.MORNING -> MORNING_NOTIFICATION_ID
+            NotificationKind.EVENING -> EVENING_NOTIFICATION_ID
+            NotificationKind.WEEKLY -> 102
+        }
     }
 }

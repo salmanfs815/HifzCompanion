@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +28,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.Duration
+import java.time.ZonedDateTime
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import javax.inject.Inject
 
 data class ActivityLogState(
@@ -43,9 +49,8 @@ class ActivityLogViewModel @Inject constructor(
     private val savingEventId = MutableStateFlow<Int?>(null)
     private val message = MutableStateFlow<String?>(null)
     val state: StateFlow<ActivityLogState> = combine(
-        repository.getAllReviewEvents(), savingEventId, message
-    ) { events, saving, status ->
-        val today = LocalDate.now()
+        repository.getAllReviewEvents(), savingEventId, message, localDateFlow()
+    ) { events, saving, status, today ->
         ActivityLogState(
             events = events.filter { it.localDate() == today }.sortedByDescending { it.timestamp },
             savingEventId = saving,
@@ -100,7 +105,15 @@ fun ActivityLogScreen(viewModel: ActivityLogViewModel, onBack: () -> Unit) {
                             Instant.ofEpochMilli(event.timestamp).atZone(ZoneId.systemDefault())
                                 .format(DateTimeFormatter.ofPattern("h:mm a"))
                         }
-                        ElevatedCard(Modifier.fillMaxWidth()) {
+                        val resultColor = event.quality.color()
+                        val contentColor = event.quality.contentColor()
+                        ElevatedCard(
+                            Modifier.fillMaxWidth(),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = resultColor,
+                                contentColor = contentColor
+                            )
+                        ) {
                             ListItem(
                                 headlineContent = { Text("Page ${event.pageId} • ${event.quality.displayName()}") },
                                 supportingContent = {
@@ -108,11 +121,20 @@ fun ActivityLogScreen(viewModel: ActivityLogViewModel, onBack: () -> Unit) {
                                 },
                                 trailingContent = {
                                     if (state.savingEventId == event.id) {
-                                        CircularProgressIndicator(Modifier.size(24.dp))
+                                        CircularProgressIndicator(Modifier.size(24.dp), color = contentColor)
                                     } else {
-                                        IconButton(onClick = { editing = event }) { Icon(Icons.Rounded.Edit, "Change revision strength") }
+                                        IconButton(
+                                            onClick = { editing = event },
+                                            colors = IconButtonDefaults.iconButtonColors(contentColor = contentColor)
+                                        ) { Icon(Icons.Rounded.Edit, "Change revision strength") }
                                     }
-                                }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = resultColor,
+                                    headlineColor = contentColor,
+                                    supportingColor = contentColor,
+                                    trailingIconColor = contentColor
+                                )
                             )
                         }
                     }
@@ -147,3 +169,23 @@ fun ActivityLogScreen(viewModel: ActivityLogViewModel, onBack: () -> Unit) {
 }
 
 private fun ReviewResult.displayName() = name.lowercase().replaceFirstChar(Char::uppercase)
+
+private fun ReviewResult.color() = when (this) {
+    ReviewResult.STRONG -> Color(0xFF81C784)
+    ReviewResult.GOOD -> Color(0xFFFFF176)
+    ReviewResult.WEAK -> Color(0xFFFFB74D)
+    ReviewResult.FAILED -> Color(0xFFE57373)
+}
+
+private fun ReviewResult.contentColor() = when (this) {
+    ReviewResult.GOOD -> Color.Black
+    else -> Color.White
+}
+
+private fun localDateFlow(): Flow<LocalDate> = flow {
+    while (currentCoroutineContext().isActive) {
+        val now = ZonedDateTime.now()
+        emit(now.toLocalDate())
+        delay(Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay(now.zone)).toMillis().coerceAtLeast(1L))
+    }
+}

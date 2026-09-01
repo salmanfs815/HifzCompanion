@@ -42,7 +42,7 @@ class HifzJourneyEndToEndTest {
         assertEquals(QueueType.NEW, repository.progress.value.getValue(3).queueType)
 
         val beforeReview = GetDailyReviewTasksUseCase(repository, scheduler, settingsRepository)().first()
-        assertEquals(listOf(3, 1, 2), beforeReview.map { it.unitId })
+        assertEquals(listOf(1, 2), beforeReview.map { it.unitId })
 
         RecordReviewUseCase(repository, scheduler, settingsRepository)(
             repository.progress.value.getValue(1),
@@ -56,10 +56,10 @@ class HifzJourneyEndToEndTest {
         assertEquals(ReviewType.SCHEDULED, repository.events.single().reviewType)
         assertEquals(90, repository.events.single().durationSeconds)
         assertFalse(GetDailyReviewTasksUseCase(repository, scheduler, settingsRepository)().first().any { it.unitId == 1 })
-        assertEquals(
-            1,
-            GetDashboardStatsUseCase(repository, scheduler, settingsRepository)().first().recoveryCount
-        )
+        val stats = GetDashboardStatsUseCase(repository, scheduler, settingsRepository)().first()
+        assertEquals(1, stats.recoveryCount)
+        assertEquals(1, stats.todayProgressPages)
+        assertEquals(2, stats.totalProgressPages)
     }
 }
 
@@ -99,5 +99,9 @@ private class JourneyRepository : HifzRepository {
         )
     }
 
-    override fun getTodayReviewCount(): Flow<Int> = MutableStateFlow(events.size)
+    override fun getReviewCountForDate(date: LocalDate): Flow<Int> = MutableStateFlow(events.size)
+    override suspend fun deleteProgressAndHistory(unitId: Int) {
+        progress.update { it - unitId }
+        events.removeAll { it.pageId == unitId }
+    }
 }
