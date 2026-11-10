@@ -2,7 +2,10 @@ package ca.salmanfs.hifzcompanion.ui.review
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hifzcompanion.core.domain.models.SessionSortOrder
+import com.hifzcompanion.core.domain.repository.UserSettingsRepository
 import com.hifzcompanion.core.domain.usecase.GetDailyReviewTasksUseCase
+import com.hifzcompanion.core.domain.usecase.inSessionOrder
 import com.hifzcompanion.core.domain.usecase.RecordReviewUseCase
 import com.hifzcompanion.scheduler.models.Progress
 import com.hifzcompanion.scheduler.models.ReviewResult
@@ -19,6 +22,7 @@ sealed interface ReviewUiState {
         val tasks: List<Progress>,
         val currentIndex: Int,
         val isFinished: Boolean = false,
+        val sortOrder: SessionSortOrder = SessionSortOrder.PRIORITY,
         val today: LocalDate = LocalDate.now()
     ) : ReviewUiState {
         val currentPageProgress: Progress? = if (currentIndex < tasks.size) tasks[currentIndex] else null
@@ -34,8 +38,12 @@ sealed interface ReviewUiState {
 class ReviewSessionViewModel @Inject constructor(
     private val getDailyReviewTasksUseCase: GetDailyReviewTasksUseCase,
     private val recordReviewUseCase: RecordReviewUseCase,
-    private val notificationManager: ReviewNotificationManager
+    private val notificationManager: ReviewNotificationManager,
+    private val settingsRepository: UserSettingsRepository
 ) : ViewModel() {
+
+    /** Today's tasks as the scheduler prioritised them, used to restore PRIORITY order. */
+    private var priorityTasks: List<Progress> = emptyList()
 
     private val _uiState = MutableStateFlow<ReviewUiState>(ReviewUiState.Loading)
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
@@ -44,7 +52,14 @@ class ReviewSessionViewModel @Inject constructor(
         viewModelScope.launch {
             getDailyReviewTasksUseCase().collect { tasks ->
                 if (_uiState.value is ReviewUiState.Loading) {
-                    _uiState.value = ReviewUiState.Session(tasks, 0, isFinished = tasks.isEmpty())
+                    val order = settingsRepository.getUserSettings().first().sessionSortOrder
+                    priorityTasks = tasks
+                    _uiState.value = ReviewUiState.Session(
+                        tasks = tasks.inSessionOrder(order),
+                        currentIndex = 0,
+                        isFinished = tasks.isEmpty(),
+                        sortOrder = order
+                    )
                     if (tasks.isEmpty()) notificationManager.dismissDailyReminders()
                 }
             }
@@ -77,5 +92,19 @@ class ReviewSessionViewModel @Inject constructor(
             add(current)
         }
         _uiState.value = currentState.copy(tasks = reordered)
+    }
+
+    /** Re-orders only the pages not yet reviewed and remembers the choice. */
+    fun setSortOrder(order: SessionSortOrder) {
+        val currentState = _uiState.value as? ReviewUiState.Session ?: return
+        if (currentState.sortOrder == order) return
+        val reviewed = currentState.tasks.take(currentState.currentIndex)
+        val remainingIds = currentState.tasks.drop(currentState.currentIndex).map { it.unitId }.toSet()
+        val remaining = priorityTasks.filter { it.unitId in remainingIds }.inSessionOrder(order)
+        _uiState.value = currentState.copy(tasks = reviewed + remaining, sortOrder = order)
+        viewModelScope.launch {
+            val settings = settingsRepository.getUserSettings().first()
+            settingsRepository.updateUserSettings(settings.copy(sessionSortOrder = order))
+        }
     }
 }

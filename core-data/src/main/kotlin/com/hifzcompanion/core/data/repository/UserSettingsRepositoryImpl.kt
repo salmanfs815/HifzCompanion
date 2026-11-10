@@ -10,6 +10,7 @@ import com.hifzcompanion.core.domain.models.MemorizationOrder
 import com.hifzcompanion.core.domain.models.MushafType
 import com.hifzcompanion.core.domain.models.AppTheme
 import com.hifzcompanion.core.domain.models.ReviewOrder
+import com.hifzcompanion.core.domain.models.SessionSortOrder
 import com.hifzcompanion.core.domain.models.UserSettings
 import com.hifzcompanion.core.domain.repository.UserSettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +43,7 @@ class UserSettingsRepositoryImpl @Inject constructor(
         val AUTOMATIC_BACKUP_ENABLED = booleanPreferencesKey("automatic_backup_enabled")
         val AUTO_ADVANCE = booleanPreferencesKey("auto_advance")
         val THEME = stringPreferencesKey("theme")
+        val SESSION_SORT_ORDER = stringPreferencesKey("session_sort_order")
     }
 
     override fun getUserSettings(): Flow<UserSettings> {
@@ -67,7 +69,8 @@ class UserSettingsRepositoryImpl @Inject constructor(
                 weeklyNotificationDay = preferences[Keys.WEEKLY_NOTIFICATION_DAY] ?: 7,
                 automaticBackupEnabled = preferences[Keys.AUTOMATIC_BACKUP_ENABLED] ?: false,
                 autoAdvance = preferences[Keys.AUTO_ADVANCE] ?: true,
-                theme = enumValueOrDefault(preferences[Keys.THEME], AppTheme.SYSTEM)
+                theme = enumValueOrDefault(preferences[Keys.THEME], AppTheme.SYSTEM),
+                sessionSortOrder = enumValueOrDefault(preferences[Keys.SESSION_SORT_ORDER], SessionSortOrder.PRIORITY)
             )
         }
     }
@@ -95,6 +98,7 @@ class UserSettingsRepositoryImpl @Inject constructor(
             preferences[Keys.AUTOMATIC_BACKUP_ENABLED] = settings.automaticBackupEnabled
             preferences[Keys.AUTO_ADVANCE] = settings.autoAdvance
             preferences[Keys.THEME] = settings.theme.name
+            preferences[Keys.SESSION_SORT_ORDER] = settings.sessionSortOrder.name
         }
     }
 

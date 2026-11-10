@@ -24,7 +24,8 @@ data class UserSettings(
     val weeklyNotificationDay: Int = 7,
     val automaticBackupEnabled: Boolean = false,
     val autoAdvance: Boolean = true,
-    val theme: AppTheme = AppTheme.SYSTEM
+    val theme: AppTheme = AppTheme.SYSTEM,
+    val sessionSortOrder: SessionSortOrder = SessionSortOrder.PRIORITY
 )
 
 @Serializable
@@ -44,3 +45,7 @@ enum class ReviewOrder { OLDEST_FIRST, NEWEST_FIRST, PAGE_ORDER }
 
 @Serializable
 enum class AppTheme { SYSTEM, LIGHT, DARK }
+
+/** Display order of today's already-selected review pages; does not change which pages are selected. */
+@Serializable
+enum class SessionSortOrder { PRIORITY, PAGE_NUMBER }

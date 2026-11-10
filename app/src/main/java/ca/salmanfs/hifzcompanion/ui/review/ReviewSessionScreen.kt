@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ca.salmanfs.hifzcompanion.ui.components.SortOrderMenu
 import com.hifzcompanion.scheduler.models.ReviewResult
 import com.hifzcompanion.core.domain.quran.QuranMetadata
 
@@ -35,6 +36,11 @@ fun ReviewSessionScreen(
                 navigationIcon = {
                     IconButton(onClick = onFinished) {
                         Icon(Icons.Rounded.Close, contentDescription = "Close")
+                    }
+                },
+                actions = {
+                    (uiState as? ReviewUiState.Session)?.takeUnless { it.isFinished }?.let { session ->
+                        SortOrderMenu(selected = session.sortOrder, onSelect = viewModel::setSortOrder)
                     }
                 }
             )
