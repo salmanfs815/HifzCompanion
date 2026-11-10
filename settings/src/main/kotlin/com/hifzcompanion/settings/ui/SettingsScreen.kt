@@ -152,7 +152,7 @@ fun SettingsScreen(
             HorizontalDivider()
             Text("Scheduler", style = MaterialTheme.typography.titleLarge)
             SettingSlider("Daily capacity", "Usual maximum number of review pages assigned per day.", settings.dailyCapacity, 10..60) { viewModel.update { s -> s.copy(dailyCapacity = it) } }
-            SettingSlider("Minimum pages", "Minimum long-term review load, even with a small memorized amount.", settings.minimumPages, 1..30) { viewModel.update { s -> s.copy(minimumPages = it) } }
+            SettingSlider("Minimum pages", "On light days, pages due soonest are pulled forward to reach this. Skipping them never makes them overdue.", settings.minimumPages, 1..30) { viewModel.update { s -> s.copy(minimumPages = it) } }
             SettingSlider("Rotation days", "Number of days in which the app aims to cycle through memorized pages.", settings.rotationDays, 7..60) { viewModel.update { s -> s.copy(rotationDays = it) } }
             SettingSlider("Maximum overload", "Allows urgent recovery and backlog work to exceed daily capacity.", settings.maximumOverloadPercent, 100..200, "%") { viewModel.update { s -> s.copy(maximumOverloadPercent = it) } }
             SettingSlider("Strong reviews to exit recovery", "Consecutive Strong ratings needed before a weak page returns to rotation.", settings.recoveryStrongReviewsRequired, 1..5) { viewModel.update { s -> s.copy(recoveryStrongReviewsRequired = it) } }

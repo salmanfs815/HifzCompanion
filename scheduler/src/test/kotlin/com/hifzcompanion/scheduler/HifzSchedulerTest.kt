@@ -186,6 +186,51 @@ class HifzSchedulerTest {
         assertEquals(emptyList<Progress>(), scheduler.getDailyTasks(listOf(suggestion, reviewed), today, 1))
     }
 
+    private fun longTerm(id: Int, next: LocalDate, last: LocalDate? = today.minusDays(14)) =
+        Progress(id, QueueType.LONG_TERM, 0, next, last, ReviewResult.GOOD, dateMemorized = today.minusDays(100))
+
+    @Test
+    fun `light day is topped up to minimum with soonest-due pages`() {
+        val config = SchedulerConfig(dailyCapacity = 20, minimumPages = 5)
+        val due = listOf(longTerm(1, today), longTerm(2, today.minusDays(1)))
+        val future = (3..10).map { longTerm(it, today.plusDays((11 - it).toLong())) } // id 10 is soonest
+
+        val tasks = scheduler.getDailyTasks(due + future, today, 10, config)
+
+        assertEquals(5, tasks.size)
+        assertEquals(setOf(1, 2), tasks.take(2).map { it.unitId }.toSet())
+        assertEquals(listOf(10, 9, 8), tasks.drop(2).map { it.unitId })
+    }
+
+    @Test
+    fun `pages reviewed today count toward the minimum`() {
+        val config = SchedulerConfig(dailyCapacity = 20, minimumPages = 5)
+        val reviewed = (1..4).map { longTerm(it, today.plusDays(14), last = today) }
+        val future = (5..10).map { longTerm(it, today.plusDays(it.toLong())) }
+
+        val tasks = scheduler.getDailyTasks(reviewed + future, today, 10, config)
+
+        assertEquals(listOf(5), tasks.map { it.unitId })
+    }
+
+    @Test
+    fun `no top-up when due pages already meet the minimum`() {
+        val config = SchedulerConfig(dailyCapacity = 20, minimumPages = 2)
+        val due = listOf(longTerm(1, today), longTerm(2, today))
+        val future = listOf(longTerm(3, today.plusDays(1)))
+
+        assertEquals(listOf(1, 2), scheduler.getDailyTasks(due + future, today, 3, config).map { it.unitId })
+    }
+
+    @Test
+    fun `new and recovery pages are never pulled forward`() {
+        val config = SchedulerConfig(dailyCapacity = 20, minimumPages = 5)
+        val newPage = Progress(1, QueueType.NEW, 1, today.plusDays(1), today.minusDays(1), ReviewResult.GOOD, dateMemorized = today.minusDays(2))
+        val weakPage = Progress(2, QueueType.RECOVERY_WEAK, 0, today.plusDays(1), today.minusDays(1), ReviewResult.WEAK, dateMemorized = today.minusDays(50))
+
+        assertEquals(emptyList<Progress>(), scheduler.getDailyTasks(listOf(newPage, weakPage), today, 2, config))
+    }
+
     @Test
     fun `review order is configurable`() {
         val old = Progress(1, QueueType.LONG_TERM, 0, today, today.minusDays(10), ReviewResult.GOOD, dateMemorized = today.minusDays(100))

@@ -171,9 +171,35 @@ class HifzScheduler(
         val priorityTasks = recovery + newTasks
         val remainingCapacity = (maxCapacity - priorityTasks.size).coerceAtLeast(0)
         val longTermTarget = calculateLongTermPagesPerDay(memorizedPagesCount, config)
-        return (priorityTasks + longTerm.take(maxOf(remainingCapacity, longTermTarget)))
+        val scheduled = (priorityTasks + longTerm.take(maxOf(remainingCapacity, longTermTarget)))
             .distinctBy { it.unitId }
             .take(maxCapacity)
+
+        // Minimum daily load: on light days, pull long-term pages forward so a
+        // routine is kept. Pages reviewed today count toward the minimum, so the
+        // top-up doesn't refill after every review. Pulled-forward pages keep their
+        // real nextReviewDate, so skipping them never makes them overdue.
+        val reviewedToday = allProgress.count {
+            it.active && it.dateMemorized != null && it.lastReviewDate == today
+        }
+        val shortfall = minOf(
+            config.minimumPages - reviewedToday - scheduled.size,
+            maxCapacity - scheduled.size
+        )
+        if (shortfall <= 0) return scheduled
+
+        val pullForward = allProgress
+            .filter {
+                it.active &&
+                    it.dateMemorized != null &&
+                    it.queueType == QueueType.LONG_TERM &&
+                    it.lastReviewDate != today &&
+                    it.nextReviewDate > today
+            }
+            .sortedWith(compareBy<Progress> { it.nextReviewDate }.thenBy { it.unitId })
+            .take(shortfall)
+
+        return scheduled + pullForward
     }
 
     fun maximumDailyTasks(

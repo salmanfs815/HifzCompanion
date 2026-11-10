@@ -10,6 +10,7 @@ import com.hifzcompanion.notifications.ReviewNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 sealed interface ReviewUiState {
@@ -17,9 +18,15 @@ sealed interface ReviewUiState {
     data class Session(
         val tasks: List<Progress>,
         val currentIndex: Int,
-        val isFinished: Boolean = false
+        val isFinished: Boolean = false,
+        val today: LocalDate = LocalDate.now()
     ) : ReviewUiState {
         val currentPageProgress: Progress? = if (currentIndex < tasks.size) tasks[currentIndex] else null
+
+        /** Days until the current page is actually due; > 0 means it was pulled forward to meet the daily minimum. */
+        val currentDaysAhead: Long = currentPageProgress
+            ?.let { java.time.temporal.ChronoUnit.DAYS.between(today, it.nextReviewDate) }
+            ?.coerceAtLeast(0) ?: 0
     }
 }
 

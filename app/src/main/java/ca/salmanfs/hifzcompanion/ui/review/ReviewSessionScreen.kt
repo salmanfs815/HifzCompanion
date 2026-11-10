@@ -57,6 +57,7 @@ fun ReviewSessionScreen(
                                 pageId = progress.unitId,
                                 current = state.currentIndex + 1,
                                 total = state.tasks.size,
+                                daysAhead = state.currentDaysAhead,
                                 onRate = viewModel::submitRating,
                                 onSkip = viewModel::skipCurrentPage
                             )
@@ -73,6 +74,7 @@ fun ReviewContent(
     pageId: Int,
     current: Int,
     total: Int,
+    daysAhead: Long,
     onRate: (ReviewResult) -> Unit,
     onSkip: () -> Unit
 ) {
@@ -105,6 +107,21 @@ fun ReviewContent(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (daysAhead > 0) {
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shape = CircleShape,
+                modifier = Modifier.padding(top = 12.dp)
+            ) {
+                Text(
+                    text = "Extra · due in $daysAhead ${if (daysAhead == 1L) "day" else "days"}",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
