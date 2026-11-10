@@ -15,15 +15,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.hifzcompanion.core.domain.quran.QuranMetadata
+import com.hifzcompanion.core.domain.quran.SurahInfo
+import com.hifzcompanion.core.domain.quran.SurahPageRule
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemorizationSelector(
     selectedPages: List<Int>,
     onSelectionChange: (List<Int>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    surahRule: SurahPageRule = SurahPageRule.ALL_TOUCHED_PAGES
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    // Surahs ticked that don't yet cover most of any page (e.g. Al-Ikhlas alone on page 604).
+    var pendingSurahs by rememberSaveable { mutableStateOf(listOf<Int>()) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("${selectedPages.size} pages selected", style = MaterialTheme.typography.bodyMedium)
         PrimaryTabRow(selectedTabIndex = tab) {
@@ -33,7 +38,14 @@ fun MemorizationSelector(
         }
         when (tab) {
             0 -> PageSelection(selectedPages, onSelectionChange, Modifier.weight(1f))
-            1 -> SurahSelection(selectedPages, onSelectionChange, Modifier.weight(1f))
+            1 -> SurahSelection(
+                selected = selectedPages,
+                onChange = onSelectionChange,
+                rule = surahRule,
+                pending = pendingSurahs.toSet(),
+                onPendingChange = { pendingSurahs = it.sorted() },
+                modifier = Modifier.weight(1f)
+            )
             else -> JuzSelection(selectedPages, onSelectionChange, Modifier.weight(1f))
         }
     }
@@ -77,29 +89,69 @@ private fun PageSelection(selected: List<Int>, onChange: (List<Int>) -> Unit, mo
 }
 
 @Composable
-private fun SurahSelection(selected: List<Int>, onChange: (List<Int>) -> Unit, modifier: Modifier) {
+private fun SurahSelection(
+    selected: List<Int>,
+    onChange: (List<Int>) -> Unit,
+    rule: SurahPageRule,
+    pending: Set<Int>,
+    onPendingChange: (Set<Int>) -> Unit,
+    modifier: Modifier
+) {
+    val ownPages = remember(rule) {
+        QuranMetadata.surahs.associate { it.number to QuranMetadata.pagesForSurahs(listOf(it.number), rule) }
+    }
+    val selectedSet = selected.toSet()
+    // A surah that owns pages is ticked when all of them are selected. One that owns none
+    // (it shares its page with neighbours) is ticked when its page is selected.
+    fun coveredBy(pages: Set<Int>, surah: SurahInfo): Boolean =
+        ownPages.getValue(surah.number).ifEmpty { surah.pageRange.toList() }.all { it in pages }
+    val checked = QuranMetadata.surahs.filter { coveredBy(selectedSet, it) }.map { it.number }.toSet() + pending
+
+    fun toggle(surah: SurahInfo, enabled: Boolean) {
+        val next = if (enabled) checked + surah.number else checked - surah.number
+        val before = QuranMetadata.pagesForSurahs(checked, rule).toSet()
+        val after = QuranMetadata.pagesForSurahs(next, rule).toSet()
+        // Only touch pages whose status this toggle changed, so pages picked elsewhere stay.
+        val pages = (selectedSet - (before - after)) + after
+        onChange(pages.sorted())
+        onPendingChange(QuranMetadata.surahs.filter { it.number in next && !coveredBy(pages, it) }.map { it.number }.toSet())
+    }
+
     LazyColumn(modifier) {
         items(QuranMetadata.surahs, key = { it.number }) { surah ->
-            val pages = surah.pageRange.toList()
-            val checked = pages.all { it in selected }
+            val own = ownPages.getValue(surah.number)
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
-                    checked = checked,
-                    onCheckedChange = { enabled ->
-                        onChange(if (enabled) (selected + pages).distinct().sorted() else selected - pages.toSet())
-                    }
+                    checked = surah.number in checked,
+                    onCheckedChange = { toggle(surah, it) }
                 )
                 Column(Modifier.weight(1f)) {
                     Text("${surah.number}. ${surah.name}")
-                    Text("Pages ${surah.pageRange.first}–${surah.pageRange.last}", style = MaterialTheme.typography.bodySmall)
+                    Text(surahPagesLabel(surah, own), style = MaterialTheme.typography.bodySmall)
+                    if (surah.number in pending) {
+                        Text(
+                            "Not counted yet: tick the surahs sharing its page to log it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
             HorizontalDivider()
         }
     }
+}
+
+private fun surahPagesLabel(surah: SurahInfo, ownPages: List<Int>): String {
+    if (ownPages.isEmpty()) {
+        val page = surah.pageRange.first
+        val neighbours = QuranMetadata.referenceForPage(page).surahs.filter { it.number != surah.number }
+        return "Shares page $page with ${neighbours.joinToString { it.name }}"
+    }
+    return if (ownPages.size == 1) "Page ${ownPages.first()}" else "Pages ${ownPages.first()}–${ownPages.last()}"
 }
 
 @Composable

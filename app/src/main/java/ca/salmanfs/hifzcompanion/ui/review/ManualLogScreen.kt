@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.hifzcompanion.core.domain.quran.SurahPageRule
 import com.hifzcompanion.core.domain.usecase.LogManualReviewUseCase
 import com.hifzcompanion.core.ui.MemorizationSelector
 import com.hifzcompanion.scheduler.models.ReviewResult
@@ -100,7 +101,13 @@ fun ManualLogScreen(viewModel: ManualLogViewModel, onBack: () -> Unit) {
                     if (state.newlyMemorized) "Select what you newly memorized." else "Select what you reviewed outside today's schedule.",
                     style = MaterialTheme.typography.bodyMedium
                 )
-                MemorizationSelector(state.pages, viewModel::setPages, Modifier.weight(1f).fillMaxWidth())
+                MemorizationSelector(
+                    selectedPages = state.pages,
+                    onSelectionChange = viewModel::setPages,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    // Log only pages mostly covered by the surahs recited, not the neighbours' edge pages.
+                    surahRule = SurahPageRule.MAJORITY_OF_PAGE
+                )
                 OutlinedTextField(
                     value = state.notes,
                     onValueChange = viewModel::setNotes,
