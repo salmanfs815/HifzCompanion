@@ -13,6 +13,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ca.salmanfs.hifzcompanion.ui.components.HifzLogo
+import ca.salmanfs.hifzcompanion.ui.guide.AppGuideScreen
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.hifzcompanion.core.domain.models.MemorizationOrder
 import com.hifzcompanion.core.domain.models.MushafType
 import com.hifzcompanion.core.ui.MemorizationSelector
@@ -43,12 +45,22 @@ fun OnboardingScreen(
         }
     }
 
+    var showGuide by rememberSaveable { mutableStateOf(true) }
+    if (showGuide) {
+        AppGuideScreen(onFinish = { showGuide = false }, finishLabel = "Set up")
+        return
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Welcome to Hifz Companion") },
                 navigationIcon = {
-                    if (uiState.currentStep > 1) {
+                    if (uiState.currentStep == 1) {
+                        IconButton(onClick = { showGuide = true }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to introduction")
+                        }
+                    } else {
                         IconButton(onClick = { viewModel.previousStep() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }

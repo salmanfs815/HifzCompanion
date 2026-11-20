@@ -5,11 +5,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,12 +28,12 @@ fun DashboardScreen(
     onNavigateToActivityLog: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToStatistics: () -> Unit,
+    onNavigateToGuide: () -> Unit,
     onNavigateToQueue: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val windowSize = LocalWindowInfo.current.containerSize
     val isExpanded = with(LocalDensity.current) { windowSize.width.toDp() >= 840.dp }
-    var showHelp by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -43,7 +42,7 @@ fun DashboardScreen(
                 actions = {
                     IconButton(onClick = onNavigateToActivityLog) { Icon(Icons.Default.History, "Today's activity") }
                     IconButton(onClick = onNavigateToStatistics) { Icon(Icons.Default.BarChart, "Statistics") }
-                    IconButton(onClick = { showHelp = true }) { Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help") }
+                    IconButton(onClick = onNavigateToGuide) { Icon(Icons.Outlined.Info, "About Hifz Companion") }
                     IconButton(onClick = onNavigateToSettings) { Icon(Icons.Default.Settings, "Settings") }
                 }
             )
@@ -72,21 +71,6 @@ fun DashboardScreen(
                 }
             }
         }
-    }
-    if (showHelp) {
-        AlertDialog(
-            onDismissRequest = { showHelp = false },
-            title = { Text("How to use Hifz Companion") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Today's Review contains pages due from your rotation. Start the session and rate each recitation honestly.")
-                    Text("New Memorization stabilizes recently memorized pages. Recovery gives extra attention to Weak or Failed pages.")
-                    Text("Use Log memorization or extra review whenever you revise outside the suggested schedule.")
-                    Text("Use the history icon to review today's activity and correct an accidental rating. Settings lets you adjust memorized pages, schedules, reminders, and backup.")
-                }
-            },
-            confirmButton = { TextButton(onClick = { showHelp = false }) { Text("Got it") } }
-        )
     }
 }
 

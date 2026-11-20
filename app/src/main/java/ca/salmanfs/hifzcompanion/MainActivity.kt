@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import ca.salmanfs.hifzcompanion.ui.dashboard.DashboardScreen
+import ca.salmanfs.hifzcompanion.ui.guide.AppGuideScreen
 import ca.salmanfs.hifzcompanion.ui.dashboard.DashboardViewModel
 import ca.salmanfs.hifzcompanion.ui.navigation.Route
 import ca.salmanfs.hifzcompanion.ui.onboarding.OnboardingScreen
@@ -100,6 +101,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToActivityLog = { backStack.add(Route.ActivityLog) },
                                     onNavigateToSettings = { backStack.add(Route.Settings) },
                                     onNavigateToStatistics = { backStack.add(Route.Statistics) },
+                                    onNavigateToGuide = { backStack.add(Route.Guide) },
                                     onNavigateToQueue = { backStack.add(Route.QueueList(it)) }
                                 )
                             }
@@ -148,6 +150,12 @@ class MainActivity : ComponentActivity() {
                             Route.Statistics -> NavEntry(key) {
                                 val viewModel: StatisticsViewModel = hiltViewModel()
                                 StatisticsScreen(viewModel, onBack = { backStack.removeLastOrNull() })
+                            }
+                            Route.Guide -> NavEntry(key) {
+                                AppGuideScreen(
+                                    onFinish = { backStack.removeLastOrNull() },
+                                    onBack = { backStack.removeLastOrNull() }
+                                )
                             }
                             is Route.PageDetail -> NavEntry(key) {
                                 val viewModel: PageDetailViewModel = hiltViewModel()

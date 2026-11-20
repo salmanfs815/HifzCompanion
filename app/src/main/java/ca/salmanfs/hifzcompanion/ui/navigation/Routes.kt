@@ -22,6 +22,8 @@ sealed interface Route : NavKey {
     @Serializable
     data object Statistics : Route
     @Serializable
+    data object Guide : Route
+    @Serializable
     data class PageDetail(val pageId: Int) : Route
     @Serializable
     data class QueueList(val filter: String) : Route
