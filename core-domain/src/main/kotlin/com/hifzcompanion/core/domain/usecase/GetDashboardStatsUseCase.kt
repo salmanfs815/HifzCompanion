@@ -27,6 +27,7 @@ data class DashboardStats(
     val totalMemorizedPages: Int,
     val pagesDueToday: Int,
     val healthScore: Int,
+    val health: HealthBreakdown,
     val averageQuality: Double,
     val longestStreak: Int,
     val missedReviewDays: Int,
@@ -95,8 +96,14 @@ class GetDashboardStatsUseCase @Inject constructor(
             val averageReviews = if (elapsedDays > 0) events.size.toDouble() / elapsedDays else 0.0
             val weakCount = memorized.count { it.lastResult == ReviewResult.WEAK }
             val failedCount = memorized.count { it.lastResult == ReviewResult.FAILED }
-            val consistencyBonus = (currentStreak * 2).coerceAtMost(10)
-            val healthScore = (100 - overdue * 2 - weakCount * 3 - failedCount * 5 - missedDays + consistencyBonus).coerceIn(0, 100)
+            val health = HealthBreakdown.calculate(
+                memorizedPages = totalMemorized,
+                daysOverdue = memorized.map { ChronoUnit.DAYS.between(it.nextReviewDate, today) },
+                weakPages = weakCount,
+                failedPages = failedCount,
+                reviewDates = reviewDates,
+                today = today
+            )
 
                 DashboardStats(
                     todayProgressPages = todayCount,
@@ -108,7 +115,8 @@ class GetDashboardStatsUseCase @Inject constructor(
                     currentStreak = currentStreak,
                     totalMemorizedPages = totalMemorized,
                     pagesDueToday = dueToday,
-                    healthScore = healthScore,
+                    healthScore = health.score,
+                    health = health,
                     averageQuality = averageQuality,
                     longestStreak = longestStreak,
                     missedReviewDays = missedDays,
