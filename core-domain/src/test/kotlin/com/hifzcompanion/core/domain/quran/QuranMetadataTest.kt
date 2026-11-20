@@ -26,11 +26,40 @@ class QuranMetadataTest {
         assertEquals(listOf(604), majority(112, 113))
     }
 
-    @Test fun `every page sums to fifteen lines across its surahs`() {
-        for (page in 3..604) {
-            val total = QuranMetadata.referenceForPage(page).surahs.sumOf { QuranMetadata.surahLinesOnPage(page, it.number) }
-            assertTrue("page $page has $total lines", total in 14..15)
+    @Test fun `moving surah ends and starts leaves no page empty`() {
+        for (page in 1..604) assertTrue("page $page is empty", QuranMetadata.linesOnPage(page) > 0)
+    }
+
+    @Test fun `a split surah joins whichever part is larger`() {
+        // Al-'Adiyat 1-9 fills 6 lines of page 599, 10-11 one line of page 600.
+        assertEquals("Az-Zalzalah 1–8; Al-'Adiyat 1–11", QuranMetadata.ayahLabelForPage(599))
+        assertEquals("Al-Qari'ah 1–11; At-Takathur 1–8", QuranMetadata.ayahLabelForPage(600))
+    }
+
+    @Test fun `pages read in order cover every ayah exactly once`() {
+        val sequence = (1..604).flatMap { page ->
+            QuranMetadata.ayahLabelForPage(page).split("; ").map { it.substringBeforeLast(' ') to it.substringAfterLast(' ') }
         }
+        var expectedSurah = 1
+        var nextAyah = 1
+        for ((name, ayahs) in sequence) {
+            val (first, last) = ayahs.split('–').map(String::toInt)
+            if (first == 1 && nextAyah != 1) { expectedSurah++; nextAyah = 1 }
+            assertEquals(QuranMetadata.surahs[expectedSurah - 1].name, name)
+            assertEquals("$name continues from $nextAyah", nextAyah, first)
+            nextAyah = last + 1
+        }
+        assertEquals(114, expectedSurah)
+    }
+
+    @Test fun `a surah's end or start moves to its own neighbouring page`() {
+        assertEquals("Al-Mumtahanah 6–13", QuranMetadata.ayahLabelForPage(550))
+        assertEquals("As-Saff 1–5", QuranMetadata.ayahLabelForPage(551))
+        assertEquals(549..550, QuranMetadata.surahs[59].pageRange)
+        assertEquals(551..552, QuranMetadata.surahs[60].pageRange)
+        assertEquals(listOf("As-Saff"), QuranMetadata.referenceForPage(551).surahs.map { it.name })
+        // Al-Hadid 1-3 takes 5 lines of page 537, so it joins page 538.
+        assertEquals("Al-Hadid 1–11", QuranMetadata.ayahLabelForPage(538))
     }
 
     @Test fun `contiguous surah range covers every page in between`() {
@@ -44,6 +73,6 @@ class QuranMetadataTest {
     @Test fun `ayah labels follow the standard Madinah layout`() {
         assertEquals("At-Takwir 1–29", QuranMetadata.ayahLabelForPage(586))
         assertEquals("Al-Ma'idah 77–82", QuranMetadata.ayahLabelForPage(121))
-        assertEquals("Al-Waqi'ah 77–96; Al-Hadid 1–3", QuranMetadata.ayahLabelForPage(537))
+        assertEquals("Al-Waqi'ah 77–96", QuranMetadata.ayahLabelForPage(537))
     }
 }
