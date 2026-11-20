@@ -29,6 +29,11 @@ fun MemorizationSelector(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     // Surahs ticked that don't yet cover most of any page (e.g. Al-Ikhlas alone on page 604).
     var pendingSurahs by rememberSaveable { mutableStateOf(listOf<Int>()) }
+    // Surahs left unticked although their pages are selected because a neighbour on a
+    // shared page is memorized (e.g. An-Nas ticked, Al-Falaq not). Only valid for the
+    // selection the Surahs tab last produced; edits from other tabs reset it.
+    var excludedSurahs by rememberSaveable { mutableStateOf(listOf<Int>()) }
+    var excludedFor by rememberSaveable { mutableStateOf(listOf<Int>()) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("${selectedPages.size} pages selected", style = MaterialTheme.typography.bodyMedium)
         PrimaryTabRow(selectedTabIndex = tab) {
@@ -44,6 +49,11 @@ fun MemorizationSelector(
                 rule = surahRule,
                 pending = pendingSurahs.toSet(),
                 onPendingChange = { pendingSurahs = it.sorted() },
+                excluded = if (excludedFor == selectedPages) excludedSurahs.toSet() else emptySet(),
+                onExcludedChange = { surahs, pages ->
+                    excludedSurahs = surahs.sorted()
+                    excludedFor = pages
+                },
                 modifier = Modifier.weight(1f)
             )
             else -> JuzSelection(selectedPages, onSelectionChange, Modifier.weight(1f))
@@ -95,6 +105,8 @@ private fun SurahSelection(
     rule: SurahPageRule,
     pending: Set<Int>,
     onPendingChange: (Set<Int>) -> Unit,
+    excluded: Set<Int>,
+    onExcludedChange: (Set<Int>, List<Int>) -> Unit,
     modifier: Modifier
 ) {
     val ownPages = remember(rule) {
@@ -105,7 +117,9 @@ private fun SurahSelection(
     // (it shares its page with neighbours) is ticked when its page is selected.
     fun coveredBy(pages: Set<Int>, surah: SurahInfo): Boolean =
         ownPages.getValue(surah.number).ifEmpty { surah.pageRange.toList() }.all { it in pages }
-    val checked = QuranMetadata.surahs.filter { coveredBy(selectedSet, it) }.map { it.number }.toSet() + pending
+    fun coveredSurahs(pages: Set<Int>): Set<Int> =
+        QuranMetadata.surahs.filter { coveredBy(pages, it) }.map { it.number }.toSet()
+    val checked = (coveredSurahs(selectedSet) - excluded) + pending
 
     fun toggle(surah: SurahInfo, enabled: Boolean) {
         val next = if (enabled) checked + surah.number else checked - surah.number
@@ -113,8 +127,13 @@ private fun SurahSelection(
         val after = QuranMetadata.pagesForSurahs(next, rule).toSet()
         // Only touch pages whose status this toggle changed, so pages picked elsewhere stay.
         val pages = (selectedSet - (before - after)) + after
-        onChange(pages.sorted())
-        onPendingChange(QuranMetadata.surahs.filter { it.number in next && !coveredBy(pages, it) }.map { it.number }.toSet())
+        val sortedPages = pages.sorted()
+        val covered = coveredSurahs(pages)
+        onChange(sortedPages)
+        onPendingChange(next - covered)
+        // A neighbour on a shared page stays selected, so remember which surahs the user
+        // left unticked instead of showing every surah on that page as ticked.
+        onExcludedChange(covered - next, sortedPages)
     }
 
     LazyColumn(modifier) {
