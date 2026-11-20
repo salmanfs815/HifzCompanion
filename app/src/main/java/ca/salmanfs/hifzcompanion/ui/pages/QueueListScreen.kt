@@ -4,10 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -59,6 +60,16 @@ fun QueueListScreen(viewModel: QueueListViewModel, filter: String, onBack: () ->
     val todayTasks = viewModel.todayTasks.collectAsStateWithLifecycle().value
     val sortOrder = viewModel.sortOrder.collectAsStateWithLifecycle().value
     val today = LocalDate.now()
+    val listState = rememberLazyListState()
+    // The list is keyed by page, so a reorder would keep the same page in view. Once the
+    // reordered list arrives, jump to the top so the new order is obvious.
+    var reorderedFrom by remember { mutableStateOf<List<Progress>?>(null) }
+    LaunchedEffect(todayTasks) {
+        if (reorderedFrom != null && todayTasks != reorderedFrom) {
+            reorderedFrom = null
+            listState.animateScrollToItem(0)
+        }
+    }
     val pages = if (isToday) todayTasks else all.filter {
         when (filter) {
             "NEW" -> it.queueType == QueueType.NEW
@@ -72,10 +83,13 @@ fun QueueListScreen(viewModel: QueueListViewModel, filter: String, onBack: () ->
         TopAppBar(
             title = { Text(if (isToday) "Today's Review" else filter.lowercase().replaceFirstChar(Char::uppercase)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-            actions = { if (isToday) SortOrderMenu(selected = sortOrder, onSelect = viewModel::setSortOrder) }
+            actions = { if (isToday) SortOrderMenu(selected = sortOrder, onSelect = { order ->
+                if (order != sortOrder) reorderedFrom = todayTasks
+                viewModel.setSortOrder(order)
+            }) }
         )
     }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(Modifier.fillMaxSize().padding(padding), state = listState) {
             if (pages.isEmpty()) item { Text("No pages in this list.", Modifier.padding(24.dp)) }
             items(pages, key = Progress::unitId) { page ->
                 ListItem(
