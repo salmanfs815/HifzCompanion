@@ -1,0 +1,368 @@
+---
+description: Hifz Companion turns the pages you have memorized into a manageable daily revision plan, so nothing quietly slips away. Private, offline, and free.
+---
+{% assign has_play = false %}{% if site.play_store_url != "" %}{% assign has_play = true %}{% endif %}
+{% assign has_beta = false %}{% if site.beta_url != "" %}{% assign has_beta = true %}{% endif %}
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">For huffaz and students of hifz</span>
+      <h1>Keep what you've memorized <span>strong.</span></h1>
+      <p class="lede">
+        Hifz Companion turns the pages you have memorized into a manageable daily revision plan.
+        The pages you struggle with come back sooner, the ones you know well wait longer, and
+        nothing quietly slips away.
+      </p>
+      <div class="actions">
+        {% if has_play %}
+        <a class="btn btn-primary" href="{{ site.play_store_url }}">Get it on Google Play</a>
+        {% elsif has_beta %}
+        <a class="btn btn-primary" href="#beta">Join the beta</a>
+        {% else %}
+        <a class="btn btn-primary" href="#download">Download for Android</a>
+        {% endif %}
+        <a class="btn btn-secondary" href="#how-it-works">See how it works</a>
+      </div>
+      <p class="hero-note">Android 8.0+ · Works offline · No account · No ads</p>
+    </div>
+
+    <div class="phone" aria-label="Illustration of the Hifz Companion dashboard" role="img">
+      <div class="phone-top"><strong>Today</strong><span class="muted">🔥 12-day streak</span></div>
+      <div class="health">
+        <div class="ring" style="--p: 86"><span>86</span></div>
+        <div><b>Memorization health</b><small>On schedule · recall · consistency</small></div>
+      </div>
+      <div class="queue"><div><b>18</b> pages<div class="tag">Today's Review</div></div><span>›</span></div>
+      <div class="queue"><div><b>3</b> pages<div class="tag">New Memorization</div></div><span>›</span></div>
+      <div class="queue recovery"><div><b>2</b> pages<div class="tag">Recovery</div></div><span>›</span></div>
+      <span class="start">Start today's session</span>
+      <div class="rate">
+        <span class="pill strong">Strong</span><span class="pill good">Good</span>
+        <span class="pill weak">Weak</span><span class="pill failed">Failed</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Why it exists</span>
+      <h2>Memorizing is one challenge. Keeping it is another.</h2>
+      <p class="lede">
+        As your hifz grows, revision becomes the hard part: which pages today, how often, and
+        which ones are starting to fade? Notebooks and memory only go so far. Hifz Companion
+        keeps track for you, so each day you simply open the app and recite.
+      </p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>The right page at the right time</h3>
+        <p>Spaced revision brings each page back just before it would start to weaken.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Weak spots don't hide</h3>
+        <p>Pages you hesitate on get extra attention until you recite them strongly again.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/></svg></div>
+        <h3>A load you can keep up</h3>
+        <p>Daily capacity limits mean a missed day becomes a manageable catch-up, not a wall.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Three steps, a few minutes a day</h2>
+    </div>
+    <div class="grid grid-3 steps">
+      <div class="card step">
+        <h3>Tell it what you know</h3>
+        <p>Select the pages you have memorized by page, Surah, or complete Juz. The app builds a revision rotation across all of them.</p>
+      </div>
+      <div class="card step">
+        <h3>Recite, then rate</h3>
+        <p>Open today's session, recite each page from memory with your own mushaf to hand, and rate how it went.</p>
+      </div>
+      <div class="card step">
+        <h3>Let the schedule adapt</h3>
+        <p>Each rating decides when that page comes back. Strong pages wait longer; weak ones return sooner.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Your daily dashboard</span>
+      <h2>Each day's work, sorted into queues</h2>
+      <p class="lede">You always know what to recite and why it is there.</p>
+    </div>
+    <div class="grid grid-4">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg></div>
+        <h3>Today's Review</h3>
+        <p>Your long-term rotation. Everything you have memorized comes round regularly, about every two weeks by default.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <h3>New Memorization</h3>
+        <p>Recently memorized pages, reviewed on a short, tightening schedule until they are stable.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+        <h3>Recovery</h3>
+        <p>Pages rated Weak or Failed, brought back quickly until you recite them strongly twice in a row.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Overdue</h3>
+        <p>Pages past their due date. The daily load is capped, so a backlog is worked through realistically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ratings">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Ratings</span>
+      <h2>Rate each recitation honestly</h2>
+      <p class="lede">Four simple ratings drive the whole schedule. Rate what you actually recited, not what you know you could.</p>
+    </div>
+    <div class="ratings">
+      <div class="rating"><span class="pill strong">Strong</span><p>Fluent and confident</p><p class="effect">Waits longer before coming back</p></div>
+      <div class="rating"><span class="pill good">Good</span><p>Correct, with minor hesitation</p><p class="effect">Advances normally</p></div>
+      <div class="rating"><span class="pill weak">Weak</span><p>Needed prompting or hesitated repeatedly</p><p class="effect">Moves to Recovery</p></div>
+      <div class="rating"><span class="pill failed">Failed</span><p>Could not complete it reliably</p><p class="effect">Starts a dedicated recovery schedule</p></div>
+    </div>
+
+    <div class="grid grid-3" style="margin-top: 36px">
+      <div class="card">
+        <h3>New pages</h3>
+        <p>Reviewed the next day, then with gaps that grow (2, 3, 4… up to 30 days) until the page joins your long-term rotation.</p>
+      </div>
+      <div class="card">
+        <h3>Weak pages</h3>
+        <p>Come back after 1, 3, then 7 days. Two Strong recitations in a row return them to the rotation.</p>
+      </div>
+      <div class="card">
+        <h3>Failed pages</h3>
+        <p>Revisited the same day, then after 1, 3, 7, 14 and 30 days, until they are strong again.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top: 18px">All of these schedules, the rotation length, and your daily capacity can be changed in Settings.</p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap health-split">
+    <div>
+      <span class="eyebrow">Progress</span>
+      <h2>See how your hifz is really doing</h2>
+      <p class="lede">
+        A single health score shows the state of your memorization at a glance, with tips on
+        what would raise it. Statistics, streaks, and a full review history sit alongside it.
+      </p>
+      <ul class="checks">
+        <li>Current and longest revision streaks</li>
+        <li>Backlog and recovery indicators</li>
+        <li>Page-by-page history and notes</li>
+        <li>Correct a mis-tapped rating from today's activity</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Memorization health</h3>
+      <div class="meter">
+        <div class="meter-top">On schedule <span>40 pts</span></div>
+        <div class="meter-bar"><i style="width: 92%"></i></div>
+        <small>How few pages are overdue, and by how much</small>
+      </div>
+      <div class="meter">
+        <div class="meter-top">Recall <span>35 pts</span></div>
+        <div class="meter-bar"><i style="width: 84%"></i></div>
+        <small>How few pages were last rated Weak or Failed</small>
+      </div>
+      <div class="meter">
+        <div class="meter-top">Consistency <span>25 pts</span></div>
+        <div class="meter-bar"><i style="width: 80%"></i></div>
+        <small>Days with a review over the last 30 days</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Private by design</span>
+      <h2>Your revision stays yours</h2>
+      <p class="lede">Hifz Companion works entirely on your phone. There is nothing to sign up for and nothing tracking you.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>No account, no ads, no tracking</h3>
+        <p>No analytics, no advertising SDKs. Your data never leaves your phone unless you choose backup.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/><path d="M3 3l18 18"/></svg></div>
+        <h3>Fully offline</h3>
+        <p>Scheduling, ratings, statistics, and reminders all work without an internet connection.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/><path d="M12 11v6M9.5 13.5L12 11l2.5 2.5"/></svg></div>
+        <h3>Optional Google Drive backup</h3>
+        <p>Back up to a private app folder in your own Drive. The app cannot see your other files.</p>
+      </div>
+    </div>
+    <p style="margin-top: 22px"><a href="{{ '/privacy/' | relative_url }}">Read the full privacy policy →</a></p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Everything included</span>
+      <h2>Built for the long haul of hifz</h2>
+    </div>
+    <div class="grid grid-2">
+      <ul class="checks">
+        <li>Spaced-repetition scheduling you can tune</li>
+        <li>Select memorization by page, Surah, or Juz</li>
+        <li>Log extra reviews and newly memorized pages</li>
+        <li>Choose review order: oldest, newest, or page order</li>
+      </ul>
+      <ul class="checks">
+        <li>Morning, evening, and weekly-summary reminders</li>
+        <li>Light, dark, and system themes</li>
+        <li>Layouts that adapt to phones and tablets</li>
+        <li>Free and open source under the MIT License</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="beta">
+  <div class="wrap">
+    <div class="beta">
+      <div class="beta-grid">
+        <div>
+          <span class="eyebrow">Beta testing</span>
+          <h2>Help shape Hifz Companion</h2>
+          <p>
+            Hifz Companion is heading to the Google Play Store, and before that it needs people
+            who revise regularly to try it in their real routine. If you are doing hifz, have
+            completed it, or are maintaining part of the Qur'an, your feedback is exactly what
+            is needed.
+          </p>
+          <h3>What we ask of testers</h3>
+          <ul>
+            <li>Keep the app installed for at least 14 days. Google Play requires this before a public release.</li>
+            <li>Use it for your daily revision where you can.</li>
+            <li>Share what's confusing, what's missing, and anything that breaks.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h3>How to join</h3>
+          {% if has_beta %}
+          <ol>
+            <li>Open the testing link below on your Android phone, signed in to the Google account you use for the Play Store.</li>
+            <li>Tap <b>Become a tester</b>.</li>
+            <li>Follow the link to install Hifz Companion from Google Play. Updates arrive automatically.</li>
+          </ol>
+          <div class="actions">
+            <a class="btn btn-primary" href="{{ site.beta_url }}">Join the beta</a>
+            <a class="btn btn-secondary" href="{{ site.feedback_url }}">Send feedback</a>
+          </div>
+          {% elsif has_play %}
+          <p>The beta has wrapped up, and Hifz Companion is now on Google Play. Thank you to everyone who tested it! Feedback is always welcome.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="{{ site.play_store_url }}">Get it on Google Play</a>
+            <a class="btn btn-secondary" href="{{ site.feedback_url }}">Send feedback</a>
+          </div>
+          {% else %}
+          <p>Google Play beta sign-up is opening soon. In the meantime, you can install the latest version directly from GitHub and start revising today.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="{{ site.apk_url }}">Download the APK</a>
+            <a class="btn btn-secondary" href="{{ site.feedback_url }}">Send feedback</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Frequently asked</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Does the app show the Qur'an text?</summary>
+        <p>No. Hifz Companion is a revision planner: it tells you which pages to recite and keeps track of how each one went. Recite from memory and check against your own mushaf.</p>
+      </details>
+      <details>
+        <summary>Which mushaf does it follow?</summary>
+        <p>Pages follow the 15-line, 604-page Madinah mushaf. Where one Surah ends and the next begins on the same page, the smaller part joins its own Surah's neighbouring page, so each Surah can be revised and logged on its own.</p>
+      </details>
+      <details>
+        <summary>I'm partway through memorizing. Can I still use it?</summary>
+        <p>Yes. Select only the pages you have memorized so far. As you memorize more, log each new page and it starts on the New Memorization schedule.</p>
+      </details>
+      <details>
+        <summary>What happens if I miss a few days?</summary>
+        <p>Missed pages become overdue, but the daily load is capped so you are never handed an impossible session. You catch up over the following days.</p>
+      </details>
+      <details>
+        <summary>Do I need an internet connection or an account?</summary>
+        <p>No. Everything works offline and no sign-up is needed. An internet connection is only used if you choose to back up to Google Drive.</p>
+      </details>
+      <details>
+        <summary>How do I move to a new phone?</summary>
+        <p>Back up to Google Drive from Settings on the old phone, then choose <b>Restore from Cloud</b> when setting up the app on the new one with the same Google account.</p>
+      </details>
+      <details>
+        <summary>Is it available for iPhone?</summary>
+        <p>Not at the moment. Hifz Companion is Android-only and needs Android 8.0 or newer.</p>
+      </details>
+      <details>
+        <summary>How much does it cost?</summary>
+        <p>Nothing. It is free, has no ads or in-app purchases, and the source code is open on GitHub.</p>
+      </details>
+    </div>
+    <p style="margin-top: 24px">More detail is in the <a href="{{ '/guide/' | relative_url }}">user guide</a>.</p>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="wrap">
+    <img src="{{ '/assets/logo.png' | relative_url }}" alt="Hifz Companion logo" width="96" height="96">
+    <h2>Start revising with Hifz Companion</h2>
+    <p class="lede">Set it up in a couple of minutes, then just open it each day.</p>
+    <div class="actions">
+      {% if has_play %}
+      <a class="btn btn-primary" href="{{ site.play_store_url }}">Get it on Google Play</a>
+      {% elsif has_beta %}
+      <a class="btn btn-primary" href="{{ site.beta_url }}">Join the beta on Google Play</a>
+      <a class="btn btn-secondary" href="{{ site.apk_url }}">Or download the APK</a>
+      {% else %}
+      <a class="btn btn-primary" href="{{ site.apk_url }}">Download the APK</a>
+      {% endif %}
+    </div>
+    {% unless has_play %}
+    <p class="hero-note">Installing the APK directly? Android will ask you to allow installs from your browser once. See the <a href="{{ '/guide/' | relative_url }}">guide</a> for update tips.</p>
+    {% endunless %}
+  </div>
+</section>

@@ -1,0 +1,36 @@
+# GitHub Pages site for Hifz Companion (served from /docs on main).
+title: Hifz Companion
+description: A private, offline Android revision planner that keeps your Qur'an memorization strong.
+url: https://salmanfs815.github.io
+baseurl: /HifzCompanion
+repository_url: https://github.com/salmanfs815/HifzCompanion
+
+# Calls to action. Fill these in as the release progresses; the site adapts.
+#   beta_url:       Google Play closed/open testing opt-in link (or a sign-up form).
+#                   While set, the site invites people to join the beta.
+#   play_store_url: Public Google Play listing. Once set, it becomes the main download.
+beta_url: ""
+play_store_url: ""
+apk_url: https://github.com/salmanfs815/HifzCompanion/releases/latest
+feedback_url: https://github.com/salmanfs815/HifzCompanion/issues/new
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+# Developer documentation stays on GitHub; only user-facing pages are published.
+exclude:
+  - ARCHITECTURE.md
+  - OAUTH_SETUP.md
+  - RELEASING.md
+  - TESTING.md
+  - PRIVACY.md
+  - USER_GUIDE.md
+  - Gemfile
+  - Gemfile.lock

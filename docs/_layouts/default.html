@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if page.title %}{% assign full_title = page.title | append: " · " | append: site.title %}{% else %}{% assign full_title = site.title %}{% endif %}
+  {% assign desc = page.description | default: site.description %}
+  <title>{{ full_title }}</title>
+  <meta name="description" content="{{ desc }}">
+  <meta property="og:title" content="{{ full_title }}">
+  <meta property="og:description" content="{{ desc }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ page.url | absolute_url }}">
+  <meta property="og:image" content="{{ '/assets/logo.png' | absolute_url }}">
+  <meta name="theme-color" content="#1a5e38">
+  <link rel="icon" type="image/png" href="{{ '/assets/favicon.png' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/assets/logo.png' | relative_url }}" alt="" width="32" height="32">
+        <span>Hifz Companion</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="{{ '/#how-it-works' | relative_url }}">How it works</a>
+        <a href="{{ '/guide/' | relative_url }}">Guide</a>
+        <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
+        {% if site.play_store_url != "" %}
+        <a class="nav-cta" href="{{ site.play_store_url }}">Get the app</a>
+        {% elsif site.beta_url != "" %}
+        <a class="nav-cta" href="{{ '/#beta' | relative_url }}">Join the beta</a>
+        {% else %}
+        <a class="nav-cta" href="{{ '/#download' | relative_url }}">Download</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% if page.prose %}
+    <article class="wrap prose">
+      {{ content }}
+    </article>
+    {% else %}
+    {{ content }}
+    {% endif %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <a class="brand" href="{{ '/' | relative_url }}">
+          <img src="{{ '/assets/logo.png' | relative_url }}" alt="" width="28" height="28">
+          <span>Hifz Companion</span>
+        </a>
+        <p class="muted">Free, open source, and private. No ads, no tracking, no account.</p>
+      </div>
+      <nav aria-label="Footer">
+        <a href="{{ '/guide/' | relative_url }}">User guide</a>
+        <a href="{{ '/privacy/' | relative_url }}">Privacy policy</a>
+        <a href="{{ site.feedback_url }}">Send feedback</a>
+        <a href="{{ site.repository_url }}">Source code</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

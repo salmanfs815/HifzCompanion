@@ -6,6 +6,8 @@
 
 <p align="center">
   A private, offline-first Android revision scheduler for maintaining Qur'an memorization.
+  <br>
+  <a href="https://salmanfs815.github.io/HifzCompanion/"><strong>salmanfs815.github.io/HifzCompanion</strong></a>
 </p>
 
 <p align="center">
