@@ -10,7 +10,7 @@ For an update, install the new APK over the current version. Keeping the existin
 
 Google Drive is optional. You may skip it and use every scheduling and tracking feature offline.
 
-Choose the Mushaf type, memorization order, and the pages currently memorized. Pages can be selected efficiently by page range, Surah, or Juz. The app creates a long-term revision rotation for memorized pages and suggests the next page for memorization.
+Confirm the Mushaf type (currently only the 15-line, 604-page Madinah Mushaf is supported), then choose the memorization order and the pages currently memorized. Pages can be selected efficiently by page range, Surah, or Juz. The app creates a long-term revision rotation for memorized pages and suggests the next page for memorization.
 
 ## Daily revision
 

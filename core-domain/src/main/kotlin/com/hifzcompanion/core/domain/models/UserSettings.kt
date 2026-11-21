@@ -28,11 +28,20 @@ data class UserSettings(
     val sessionSortOrder: SessionSortOrder = SessionSortOrder.PRIORITY
 )
 
+/**
+ * Page layouts. Only [MADINAH] has page data ([com.hifzcompanion.core.domain.quran.QuranMetadata]);
+ * [URDU] and [TAJWEED] remain so settings and backups saved by earlier versions still load.
+ */
 @Serializable
-enum class MushafType {
-    MADINAH,
-    URDU,
-    TAJWEED
+enum class MushafType(val label: String) {
+    MADINAH("Madinah (15-line, 604 pages)"),
+    URDU("Indopak"),
+    TAJWEED("Tajweed");
+
+    companion object {
+        /** Layouts the app has page data for, offered during onboarding. */
+        val supported: List<MushafType> = listOf(MADINAH)
+    }
 }
 
 @Serializable

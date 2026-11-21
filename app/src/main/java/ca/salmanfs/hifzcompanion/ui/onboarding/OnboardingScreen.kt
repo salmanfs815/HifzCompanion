@@ -185,14 +185,19 @@ fun GoogleSignInStep(
 
 @Composable
 fun ChooseMushafStep(selected: MushafType, onSelect: (MushafType) -> Unit) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Choose Mushaf Type", style = MaterialTheme.typography.headlineSmall)
-        MushafType.entries.forEach { type ->
+        MushafType.supported.forEach { type ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(selected = selected == type, onClick = { onSelect(type) })
-                Text(type.name)
+                Text(type.label)
             }
         }
+        Text(
+            "Page numbers follow this layout. Other mushaf layouts are not supported yet.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
