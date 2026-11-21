@@ -27,21 +27,10 @@ description: Hifz Companion turns the pages you have memorized into a manageable
       <p class="hero-note">Android 8.0+ · Works offline · No account · No ads</p>
     </div>
 
-    <div class="phone" aria-label="Illustration of the Hifz Companion dashboard" role="img">
-      <div class="phone-top"><strong>Today</strong><span class="muted">🔥 12-day streak</span></div>
-      <div class="health">
-        <div class="ring" style="--p: 86"><span>86</span></div>
-        <div><b>Memorization health</b><small>On schedule · recall · consistency</small></div>
-      </div>
-      <div class="queue"><div><b>18</b> pages<div class="tag">Today's Review</div></div><span>›</span></div>
-      <div class="queue"><div><b>3</b> pages<div class="tag">New Memorization</div></div><span>›</span></div>
-      <div class="queue recovery"><div><b>2</b> pages<div class="tag">Recovery</div></div><span>›</span></div>
-      <span class="start">Start today's session</span>
-      <div class="rate">
-        <span class="pill strong">Strong</span><span class="pill good">Good</span>
-        <span class="pill weak">Weak</span><span class="pill failed">Failed</span>
-      </div>
-    </div>
+    <figure class="phone">
+      <img src="{{ '/assets/screens/dashboard.webp' | relative_url }}" width="540" height="1155"
+           alt="Hifz Companion dashboard showing today's review, new memorization, recovery and overdue counts, a 30-day streak and a 99% health score">
+    </figure>
   </div>
 </section>
 
@@ -86,14 +75,20 @@ description: Hifz Companion turns the pages you have memorized into a manageable
       <div class="card step">
         <h3>Tell it what you know</h3>
         <p>Select the pages you have memorized by page, Surah, or complete Juz. The app builds a revision rotation across all of them.</p>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/setup-juz.webp' | relative_url }}" width="540" height="1155"
+             alt="Setup screen with Juz 26 to 30 ticked, 103 pages selected">
       </div>
       <div class="card step">
         <h3>Recite, then rate</h3>
         <p>Open today's session, recite each page from memory with your own mushaf to hand, and rate how it went.</p>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/review-session.webp' | relative_url }}" width="540" height="1155"
+             alt="Review session showing page 560, Juz 28, At-Tahrim 1 to 7, with Failed, Weak, Good and Strong buttons">
       </div>
       <div class="card step">
         <h3>Let the schedule adapt</h3>
         <p>Each rating decides when that page comes back. Strong pages wait longer; weak ones return sooner.</p>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/todays-activity.webp' | relative_url }}" width="540" height="1155"
+             alt="Today's activity listing four rated pages, each with an edit button to correct the rating">
       </div>
     </div>
   </div>
@@ -173,30 +168,17 @@ description: Hifz Companion turns the pages you have memorized into a manageable
         what would raise it. Statistics, streaks, and a full review history sit alongside it.
       </p>
       <ul class="checks">
+        <li>Health from three parts: staying on schedule, recall strength, and daily consistency</li>
         <li>Current and longest revision streaks</li>
         <li>Backlog and recovery indicators</li>
         <li>Page-by-page history and notes</li>
         <li>Correct a mis-tapped rating from today's activity</li>
       </ul>
     </div>
-    <div class="card">
-      <h3>Memorization health</h3>
-      <div class="meter">
-        <div class="meter-top">On schedule <span>40 pts</span></div>
-        <div class="meter-bar"><i style="width: 92%"></i></div>
-        <small>How few pages are overdue, and by how much</small>
-      </div>
-      <div class="meter">
-        <div class="meter-top">Recall <span>35 pts</span></div>
-        <div class="meter-bar"><i style="width: 84%"></i></div>
-        <small>How few pages were last rated Weak or Failed</small>
-      </div>
-      <div class="meter">
-        <div class="meter-top">Consistency <span>25 pts</span></div>
-        <div class="meter-bar"><i style="width: 80%"></i></div>
-        <small>Days with a review over the last 30 days</small>
-      </div>
-    </div>
+    <figure class="phone">
+      <img loading="lazy" src="{{ '/assets/screens/statistics.webp' | relative_url }}" width="540" height="1155"
+           alt="Statistics screen with pages memorized, streaks, backlog, and a health score broken into on schedule, recall strength and daily consistency">
+    </figure>
   </div>
 </section>
 
@@ -247,6 +229,24 @@ description: Hifz Companion turns the pages you have memorized into a manageable
         <li>Layouts that adapt to phones and tablets</li>
         <li>Free and open source under the MIT License</li>
       </ul>
+    </div>
+
+    <div class="gallery">
+      <figure>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/log-review.webp' | relative_url }}" width="540" height="1155"
+             alt="Log screen for recording an extra review or newly memorized pages by page, Surah or Juz">
+        <figcaption>Log extra reviews and new pages</figcaption>
+      </figure>
+      <figure>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/settings.webp' | relative_url }}" width="540" height="1155"
+             alt="Settings with sliders for daily capacity, minimum pages, rotation days, maximum overload and strong reviews to exit recovery">
+        <figcaption>Tune the schedule to your pace</figcaption>
+      </figure>
+      <figure>
+        <img class="shot" loading="lazy" src="{{ '/assets/screens/intro-guide.webp' | relative_url }}" width="540" height="1155"
+             alt="Built-in introduction guide opening with Assalamu alaikum">
+        <figcaption>A built-in guide to get started</figcaption>
+      </figure>
     </div>
   </div>
 </section>

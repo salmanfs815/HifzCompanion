@@ -6,7 +6,7 @@ This project distributes signed APKs through GitHub Releases and, once set up, a
 
 1. Start from a clean working tree and review the changelog.
 2. Update `versionCode` and `versionName` in `app/build.gradle.kts`.
-3. Run the automated verification documented in [Testing](docs/TESTING.md).
+3. Run the automated verification documented in [Testing](TESTING.md).
 4. Complete the manual release matrix with the exact release candidate.
 
 `versionCode` must increase for every APK distributed as an update. `versionName` should follow semantic versioning.
