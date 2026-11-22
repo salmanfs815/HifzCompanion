@@ -2,6 +2,23 @@
 
 All notable user-facing changes are documented here.
 
+## [1.1.0] - 2026-11-22
+
+### Added
+
+- An intro guide in onboarding and on the dashboard.
+- Priority and page-number sorting for today's review.
+- Tips on the Statistics screen explaining the health score.
+
+### Changed
+
+- The health score is now shown as proportions.
+- Page boundaries now follow surah boundaries; in the manual log, a page shared by two surahs is credited to the surah with most of its lines.
+- A surah that shares a page can now be unticked.
+- Today's review scrolls back to the top after reordering.
+- The minimum pages setting is now enforced.
+- Mushaf selection is limited to the Madinah Mushaf.
+
 ## [1.0.1] - 2026-08-03
 
 ### Added
